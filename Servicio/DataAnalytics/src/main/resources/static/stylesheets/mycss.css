@@ -1,0 +1,258 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Apr 25, 2017, 1:22:44 AM
+    Author     : fabian
+*/
+h1 {
+    
+    font-weight: bold;
+    color: #990000;
+    font-size: 40px;
+    letter-spacing: .2em;
+    line-height: 2.1em;
+    margin: 0 0 20px 0;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+h2 {
+    
+    font-weight: bold;
+    color: #CC0000;
+    font-size: 10px;
+    letter-spacing: .2em;
+    line-height: 3.1em;
+    margin:0px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+p {
+    font-weight: normal;
+    color: black;
+    font-size: 4px;
+    letter-spacing: .2em;
+    line-height: 2.1em;
+    margin:0px;
+    text-align: center;
+}
+body {
+    margin: 0;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    background-image: url("../images/escuela.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.content {
+    align-self: center;
+    background-color: white;
+    display: block;
+    max-width: 85%;
+    margin: 60px auto 60px auto;
+    border: 2px solid #990000;
+    position: relative;
+}
+.header {
+    background-color: white;
+    display: block;
+    border-bottom: 3px solid #990000;
+    border-top: 3px solid #990000;
+    min-height: 120px;
+    
+}
+.cotent .layout {
+    align-self: center;
+    max-width: 50%;
+    display: block;
+    position: relative;
+    margin-top: 100px;  
+}
+.label:first-child {
+    padding: 70px 20px 10px 20px;
+}
+.label {
+    display: inline;
+    margin: 60px auto 0 auto;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    font-size: 15px;
+    padding: 70px 20px 10px 70px;
+    text-align: center;
+    color: black;
+}
+
+.titulo{
+    display: inline;
+    margin: 60px auto 0 auto;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    font-size: 20px;
+    padding: 70px 20px 10px 70px;
+    text-align: center;
+    color: #990000;
+}
+
+.input {
+    display: inline;
+    font-size: 13px;
+    margin: 0 auto 0 auto;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    margin-bottom: 20px;
+}
+.input:focus {
+    font-size: 13px;
+    border: 1px solid #990000;
+    -webkit-box-shadow: 0px 0px 7px 0px #990000;
+}
+
+.content .button {
+    font-size: 15px;
+    display: inline;
+    margin: 0 0 0 20px;
+    color: #990000;
+    padding: 0;
+}
+.header img {
+    padding: 2px 0 2px 2px;
+}
+.table {
+    max-width: 98%;
+    margin: auto;
+    padding-bottom: 13px;
+    padding-top: 20px;
+}
+.content .button:visited, .content .button:active,.content .button:hover, .content .button:focus {
+    background-color: #D8D8D8;
+    -webkit-box-shadow: 0px 0px 7px 0px #990000;
+    border: 1px solid #990000;
+}
+.content .button:after {
+    background-color: #D8D8D8;
+    -webkit-box-shadow: 0px 0px 7px 0px #990000;
+}
+.columnText {
+    color: #990000;
+}
+.columnText .outputText {
+    color: black;
+}
+.homeHeader {
+    text-decoration: none;
+    list-style: none;
+}
+.homeHeader img {
+    float: left;
+}
+
+.optionsHeader {
+    text-decoration: none;
+    list-style: none;
+}
+
+.optionsHeader img {
+    float: left;
+    margin: auto 50px auto 10px;
+}
+
+.optionsHeader button {
+    border: 0;
+    margin: 70px 0 0 0;
+    background-color: white;
+    border-right: 1.3px solid #990000;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    font-size: 17px;
+    padding: 0 10px 0 10px;
+}
+
+.optionsHeader .barMenu {
+    text-align: center;
+    min-height: 90px;
+    
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.menuBarButton {
+    padding: 10px;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+}
+
+.dropdown:hover .menuBarButton {
+    background-color: #990000;
+    color: white;
+}
+
+.dropdown-content a:hover {background-color: #D8D8D8}
+
+.dropdown-content {
+    display: none;
+    position: absolute; 
+    background-color: #f9f9f9; /*Color de ls opciones desplegables*/
+    min-width: 250px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 5px 5px;
+    text-decoration: none;
+    display: block;
+}
+
+.scroll {
+    font-size: 15px;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-widget-header .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus, .ui-widget-header .ui-state-focus {
+    border: 1px solid #959595;
+    background: #959595 url(/faces/javax.faces.resource/images/ui-bg_highlight-hard_80_85b2cb_1x100.png?ln=primefaces-aristo) 50% 50% repeat-x;
+    background: #85b2cb linear-gradient(top, rgba(255,255,255,0.6), rgba(255,255,255,0));
+    background: #959595 -webkit-gradient(linear, left top, left bottom, from(rgba(255,255,255,0.6)), to(rgba(255,255,255,0)));
+    background: #85b2cb -moz-linear-gradient(top, rgba(255,255,255,0.6), rgba(255,255,255,0));
+    color: #313131;
+    -moz-box-shadow: 0 0 5px #85b2cb;
+    -webkit-box-shadow: 0px 0px 8px #959595;
+    box-shadow: 0px 0px 8px #959595;
+}
+
+/*---------Menú de incio-------*/
+.content .menu {
+    margin: 50px auto 50px auto;
+    text-align: center;
+}
+
+.content .menu button {
+    border: 1px solid grey;
+    padding: 10px 24px; 
+    cursor: pointer;
+    /*border-radius: 5%;*/
+    min-height: 65px;
+    min-width: 238px;
+    background-repeat: no-repeat;
+}
+
+.content .menu button:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.content button:hover {
+    -webkit-box-shadow: 0px 0px 7px 0px #990000;
+}
+

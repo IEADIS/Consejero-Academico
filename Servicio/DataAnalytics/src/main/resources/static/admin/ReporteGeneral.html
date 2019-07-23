@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui" 
+      xmlns:f="http://xmlns.jcp.org/jsf/core" >
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet"
+          href="/webjars/bootstrap/3.3.7/css/bootstrap.min.css" />    
+        <link rel="stylesheet" href="/stylesheets/mycss.css"/>
+        <script src="/webjars/jquery/jquery.min.js"></script>
+        <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+        <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+        <script src="/js/game/evaluarMateria.js"></script>
+    </head>
+    <body >
+        <h:form id="general">
+            <div class="header">
+                <ul class="optionsHeader">
+                    <li>
+                        <img src="/images/logo.jpg" alt="Escuela Colombiana de Ingenieria Julio Garavito"/>
+                        <div class="barMenu">
+                            <div class="dropdown">
+                                <button onclick="location.href = '/index.html'" class="menuBarButton">Inicio</button>
+                            </div>
+                            <div class="dropdown">
+                                <button class="menuBarButton">Herramientas</button>
+                                <div class="dropdown-content">
+                                    <a href="/admin/admin.html" target="_self">Entrar a Menú Administrador</a>
+                                    <a href="/students/student.html" target="_self">Entrar a Menú Estudiantes</a>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </h:form>
+        <div class="content">
+            <h:form id="reporteMaterias" style="text-align: center;">
+                
+                <h1 style="font-size: 45px; text-align: center">Reporte General</h1>
+                
+                <form action="">
+                    
+                    <div id = "plot1">
+                        <h1 style="font-size: 25px; text-align: center">Análisis de Comportamiento</h1>
+                        <img src="/html/img/cancelVsSems.png" width="85%" alt="Cancelaciones vs Semestres"/>
+                    </div>
+                    <div id = "plot2">
+                        <img src="/html/img/notasVsSems.png" width="85%" alt="Notas vs Semestres"/>
+                    </div>
+                    <div id = "plot2">
+                        <h1 style="font-size: 25px; text-align: center">Análisis de Correlación</h1>
+                        <img src="/html/img/corrGen.png" width="85%" alt="Notas vs Semestres"/>
+                    </div>
+                    <div id = "plot3">
+                        <iframe id="Plot1" style="text-align: center;" name="Pimb" title="Plot" width="800" height="500" 
+                                frameborder="5" scrolling="no" src="/html/General.html"></iframe>
+                    </div>
+                </form>
+               
+            </h:form>   
+            <div class ="container">
+                
+            </div>
+            <br>
+        </div>
+    </body>
+</html>
+
+

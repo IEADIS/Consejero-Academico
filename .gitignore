@@ -1,0 +1,9 @@
+# exclude everything from results
+Data/*
+Servicio/DataAnalytics/.idea
+
+# exception to the rule
+!Data/.gitkeep
+
+# ignore all logs
+*.log
