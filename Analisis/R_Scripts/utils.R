@@ -260,5 +260,15 @@ plotProgramsByYear <- function(data,year){
   legend("topright", legend = rownames(counts), fill = gray.colors(9), ncol = 1, cex = 0.45)
 }
 
+# =======================================================================================================
+# ==================================== UTILS CLASSIFICATION =============================================
+# =======================================================================================================
 
+getClassificationModelsDir <- function(){
+  return("Data/Models/Classification/")
+}
+
+getDataCleanDir <- function(){
+  return("Data/notas_clean.csv")
+}
 
