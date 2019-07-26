@@ -1,5 +1,6 @@
 library(rgl)
 library(magick)
+library(plotly)
 PLOTS_SOURCE <- "Analisis/Plots"
 
 # =======================================================================================================
