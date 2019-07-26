@@ -272,3 +272,25 @@ getDataCleanDir <- function(){
   return("Data/notas_clean.csv")
 }
 
+# =======================================================================================================
+# ======================================= MODELS SAVE/LOAD ==============================================
+# =======================================================================================================
+
+save.model <- function(model,file.name.path){
+  saveRDS(model, file = file.name.path)
+}
+
+load.models <- function(files.path){
+  models.files <- list.files(path = files.path)
+  models <- list()
+  for (file.model in models.files) {
+    model.name <- gsub(".rds","",file.model)
+    models[[model.name]] <- load.model(paste(files.path,file.model,sep = ""))
+  }
+  return(models)
+}
+
+load.model <- function(file.model){
+  print(file.model)
+  return(readRDS(file.model))
+}
