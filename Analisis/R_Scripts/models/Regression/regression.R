@@ -72,6 +72,31 @@ lm.test <- function(lm.model,data.test){
 # ================================ MODEL SELECTION / COMPARISON ========================================
 # =======================================================================================================
 
+models.mean.lm <- function(models, test.results, asignature){
+  if (length(models) == 1) {
+    # CV METRICS
+    rmse.cv <- models[[1]]$results$RMSE
+    r2.cv <- models[[1]]$results$Rsquared
+  } else {
+    # CARET TRAIN RESULTS
+    train.results <- resamples(models)
+    
+    # CV METRICS
+    rmse.cv <- summary(train.results)$statistics[["RMSE"]][,c("Mean")]
+    r2.cv <- summary(train.results)$statistics[["Rsquared"]][,c("Mean")]
+  }
+  
+  # TEST METRICS
+  rmse.test <- test.results$RMSE
+  r2.test <- test.results$Rsquared
+  
+  # METRICS MEAN
+  rmse.mean <- mean((rmse.cv + rmse.test)/2)
+  r2.mean <- mean((r2.cv + r2.test)/2)
+  
+  return(data.frame(RMSE = rmse.mean, RSquared = r2.mean))
+}
+
 model.selection.lm.sum <- function(models, test.results, asignature){ # BY SUM CV + TEST METRIC
   # CARET TRAIN COMPARISON
   train.results <- resamples(models[[asignature]])
@@ -113,39 +138,41 @@ model.selection.lm.app <- function(models, test.results, asignature){ # BY APPEA
 # ========================================= MODEL PLOTS =================================================
 # =======================================================================================================
 
-plots.lm <- function(best.model,models,asig){
+plots.lm <- function(lambda.results,models,asig,selected.lambda){
   
   asig <- gsub("\\s", "",asig)
   dir <- paste(PLOTS_DIR,"MODELS/Regression/",asig,"/",sep = "")
   dir.create(dir)
   
+  # LAMBDA TABLE RESULTS
+  plot.lambdas(lambda.results,dir,selected.lambda)
   
   if (length(models) > 1) {
     # MODELS PREDICTIONS COMP
-    plot.comp.lm(models,best.model,asig,dir)
+    plot.comp.lm(models,asig,dir)
     
     # MODELS BOX COMPARE
     pdf(paste(dir,"Models_Metrics.pdf",sep = ""))
     p <- bwplot(resamples(models), main = paste("Box Plot Comparing",asig,"Linear Models",sep = " "))
     print(p)
     dev.off()
+  } else {
+    plot.single.lm(models[[1]],asig,dir)
   }
   
   
-  # FINAL MODEL
-  plot.single.lm(best.model,asig,dir)
+  
 
 }
 
-plot.comp.lm <- function(models,best.model,asig,dir){
+plot.comp.lm <- function(models,asig,dir){
   plots.grid <- list()
   for (model.name in names(models)) {
     tmp.model <- models[[model.name]]
-    year <- paste(model.name,strtoi(model.name)+5,sep = " ")
     p <- lares::mplot_lineal(tag = tmp.model$trainingData$.outcome, 
                              score = predict(tmp.model), 
-                             subtitle = paste("Grade3 Regression Model",year), 
-                             model_name = paste(asig,"reg",year,sep = " "))
+                             subtitle = paste("Grade3 Regression Model",model.name), 
+                             model_name = paste(asig,"reg",model.name,sep = " "))
     plots.grid[[model.name]] <- p
   }
   p <- plot_grid(plotlist = plots.grid, labels = "AUTO")
@@ -209,6 +236,43 @@ plot.single.lm <- function(model,asig,dir){
   save_plot(paste(dir,"Final_Model.pdf",sep = ""),lares.f,device = cairo_pdf)
 }
 
+plot.lambdas <- function(lambdas.results,dir,selected.lambda){
+  row.fill <- c()
+  for (row in 1:nrow(lambdas.results)) {
+    if (row == selected.lambda) {
+      row.fill <- c(row.fill,'#25FEFD')
+    } else {
+      row.fill <- c(row.fill,'white')
+    }
+  }
+  
+  p <- plot_ly(
+    type = 'table',
+    header = list(
+      values = c('<b>Lambda</b>',
+                 '<b>RMSE</b>',
+                 '<b>RSquared</b>',
+                 '<b>RMSE Norm</b>',
+                 '<b>RSquared Norm</b>'),
+      line = list(color = '#506784'),
+      fill = list(color = '#119DFF'),
+      align = c('left','center'),
+      font = list(color = 'white', size = 12)
+    ),
+    cells = list(
+      values = rbind(lambdas.results$Lambda,
+        lambdas.results$RMSE,
+        lambdas.results$RSquared,
+        lambdas.results$RMSE.norm,
+        lambdas.results$RSquared.norm),
+      line = list(color = '#506784'),
+      fill = list(color = list(row.fill)),
+      align = c('left', 'center'),
+      font = list(color = c('#506784'), size = 12)
+    ))
+  export(p, paste(dir,"Lambda_Selection.pdf",sep = ""))
+}
+
 
 # =======================================================================================================
 # ====================================== MODELS SAVE/LOAD ===============================================
@@ -228,7 +292,7 @@ deploy.lm <- function(asig,time.start,time.end){
   # ADQUISITION
   allData <- read.csv(NOTES, header = TRUE)
   data.asig <- asig.adq(data = allData, asig = asig, time.start = time.start, time.end = time.end)
-  if (nrow(data.asig[data.asig$Codigo.Asignatura %in% asig,]) < 10) {
+  if (nrow(data.asig[data.asig$Codigo.Asignatura %in% asig,]) < 20) {
     return(NULL)
   }
   data.trans <- asig.trans(data.asig)
@@ -242,6 +306,7 @@ deploy.lm <- function(asig,time.start,time.end){
   
   # SAVING DATA
   model.data <- data.frame(Asignature = unique(data.part$test$Asig),
+                           TimeWindow = toString(strtoi(time.end) - strtoi(time.start)),
                            TimeSince = time.start,
                            RMSE = test.result$RMSE, Rsquared = test.result$Rsquared,
                            stringsAsFactors = FALSE)
@@ -261,44 +326,75 @@ isis.models <- function(){
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
   asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
-  years.ini <- c(2009,2010,2011,2012)
+  
+  # GET ALL YEARS
+  years <- unique(sub("-.*","",levels(allData$Periodo.Academico))) # ALL YEARS
+  years.num <- strtoi(years) # INT VALUES OF YEARS
+  time.lambdas <- 1:(max(years.num) - min(years.num))
+  
   # ASIG SISTEMAS
-  models.comp <- data.frame(Asignature = c(), TimeSince = c(), RMSE = c(), Rsquared = c())
+  models.comp <- data.frame(Asignature = c(), TimeWindow = c(), TimeSince = c(), RMSE = c(), Rsquared = c())
   models.data <- list()
   list.asig <- 1
   for (asignature in asig.sistemas) { # BY ASIGNATURE
     models.data[[list.asig]] <- list()
-    list.year <- 1
-    for (year in years.ini) { # BY YEAR WINDOW
-      asig.model <- deploy.lm(asignature,toString(year),toString(year+4))
-      if (is.null(asig.model)) {next()}
-      models.comp <- rbind(models.comp, asig.model$Data)
-      models.data[[list.asig]][[list.year]] <- asig.model$Model
-      names(models.data[[list.asig]])[list.year] <- year
-      list.year <- list.year+1
+    list.lambda <- 1
+    for (year.diff in time.lambdas) { # BY TIME WINDOW / YEAR LAMBDA
+      models.data[[list.asig]][[list.lambda]] <- list()
+      list.year <- 1
+      for (year.ini in 1:(length(years.num)-year.diff)) { # CHANGING TIME WINDOW POSITION
+        asig.model <- deploy.lm(asignature,toString(years.num[year.ini]),toString(years.num[year.ini+year.diff]))  
+        if (is.null(asig.model)) {next()} # CANT CREATE THE MODEL
+        if (any(is.na(asig.model$Model$results))) {next()} # THE MODEL CONTAINS NAs RESAMPLES, NO SENSE MODEL
+        models.comp <- rbind(models.comp, asig.model$Data)
+        models.data[[list.asig]][[list.lambda]][[list.year]] <- asig.model$Model
+        names(models.data[[list.asig]][[list.lambda]])[list.year] <- years.num[year.ini]
+        list.year <- list.year+1
+      }
+      names(models.data[[list.asig]])[list.lambda] <- year.diff
+      list.lambda <- list.lambda+1
     }
     names(models.data)[list.asig] <- asignature
     list.asig <- list.asig+1
   }
+  
   # BEST MODEL SELECTION
   
   best.models <- list()
+  
   print(unique(models.comp$Asignature))
   for (asignature in unique(models.comp$Asignature)) {
     print(paste("Asignature : ",asignature))
-    if (length(models.data[[asignature]]) == 1) {
-      best.model <- models.data[[asignature]][[1]]
-    } else {
-    best.model <- model.selection.lm.sum(models.data,models.comp,asignature)}
-    best.models[[asignature]] <- best.model
+    lambda.results <- data.frame(Lambda = c(), RMSE = c(), RSquared = c())
+    for (year.lambda in names(models.data[[asignature]])) {
+      models.metrics <- models.mean.lm(models.data[[asignature]][[year.lambda]],
+                                           models.comp[models.comp$Asignature %in% asignature & models.comp$TimeWindow %in% year.lambda,],
+                                           asignature)
+      models.metrics$Lambda <- year.lambda
+      lambda.results <- rbind(lambda.results, models.metrics)
+    }
+    print(lambda.results)
+    lambda.results$RMSE.norm <- scales::rescale(-lambda.results$RMSE, to=c(0,1))
+    lambda.results$RSquared.norm <- scales::rescale(lambda.results$RSquared, to=c(0,1))
+    
+    
+    best.model.lambda <- which.max(rowMeans(lambda.results[,c(4,5)]))
+    print(paste("Best Lambda : ",best.model.lambda))
+    
+    best.models[[asignature]] <- models.data[[asignature]][[lambda.results$Lambda[best.model.lambda]]]
+    names(best.models[[asignature]]) <- paste(names(best.models[[asignature]]),"-",
+                                              strtoi(names(best.models[[asignature]]))+best.model.lambda,sep = "")
     
     # PLOTS ASIGNATURE
-    plots.lm(best.model,models.data[[asignature]],asignature)
+    plots.lm(lambda.results,best.models[[asignature]],asignature,best.model.lambda)
   }
   
   # SAVE MODELS
   for (model.name in names(best.models)) {
-    save.model.lm(best.models[[model.name]], gsub("\\s", "", model.name))
+    for (time.window in names(best.models[[model.name]])) {
+      save.model.lm(best.models[[model.name]][[time.window]],
+                    paste(gsub("\\s", "", model.name),time.window,sep = "_"))
+    }
   }
-  return(list(best.models <- best.models, all.models <- models.data))
+  return(best.models)
 }
