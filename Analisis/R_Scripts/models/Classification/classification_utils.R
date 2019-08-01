@@ -1,6 +1,11 @@
 # Utils for Classification Models
 library(caret)
+library(plotly)
+library(plyr)
 source("Analisis/R_Scripts/utils.R")
+
+PLOTS_SOURCE_CLASS = "/Models/Classification"
+PLOTS_SOURCE_DIR_STATS = "/Statistics"
 
 # =======================================================================================================
 # ========================================= DATA UTILS ==================================================
@@ -63,5 +68,20 @@ classif_utils.getMetricsBinomial <- function( pred, class ){
   return( confusionMatrix(pred, class)$byClass )
 }
 
+# =======================================================================================================
+# ============================================ PLOTS ====================================================
+# =======================================================================================================
+
+classif_utils.plotNumberOfModelsByType <- function( models ){
+  types <- summary( factor(laply(models, function(data){ return( data[[2]]$Type ) } ) ) )
+  data <- data.frame( "Categorie" = names(types), "vals" = types )
+  
+  p <- plot_ly(data, labels = ~Categorie, values = ~vals, type = 'pie') %>%
+    layout(title = 'Porcentaje de Algoritmos entrenados',
+           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  orca(p, file = paste( PLOTS_SOURCE, PLOTS_SOURCE_CLASS, PLOTS_SOURCE_DIR_STATS, "/TrainedAlgorithmsWindowPart.png", sep = "" ))
+  return(p)
+}
 
 

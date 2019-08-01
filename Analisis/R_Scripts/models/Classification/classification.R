@@ -79,7 +79,9 @@ deploy.by.window <- function( allData, asig, time.start, time.end ){
   }
   
   models <- list()
-  models[[1]] <- list( train.svm(data.part$train), data.frame( Acc = 0, F1 = 0, Type = "SupportVectorMachine" ) )
+  models[[1]] <- list( train.glm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Logistic Regression", stringsAsFactors = FALSE ) )
+  models[[2]] <- list( train.svm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Support Vector Machine", stringsAsFactors = FALSE ) )
+  models[[3]] <- list( train.nn(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Neural Networks", stringsAsFactors = FALSE ) )
   
   models <- evaluate.models( models, data.part$test )
   return( model.selection.best(models) )
