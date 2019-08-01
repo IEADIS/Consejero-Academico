@@ -292,6 +292,5 @@ load.models <- function(files.path){
 }
 
 load.model <- function(file.model){
-  print(file.model)
   return(readRDS(file.model))
 }
