@@ -17,43 +17,13 @@ registerDoMC(cores = 5)
 # ================================= DEPLOY CLASSIFICATION MODELS ========================================
 # =======================================================================================================
 
-get.best.model.by.f1_acc <- function( models, data.test ){
-  
+get.best.model.by.f1_acc <- function( models ){
   bestF1 <- 0
   bestAcc <- 0
   bestModel <- NULL
   noF1 <- FALSE
   
-  for ( i in 1:length(models) ){
-    cm <- confusionMatrix( predict( models[[i]][[1]], data.test ), data.test$Grade3 )
-    if (  noF1 || is.na( cm$byClass["F1"] )  ){
-      noF1 <- TRUE
-      if ( bestAcc < cm$overall["Accuracy"]*0.9 ){
-        bestModel <- models[[i]]
-        bestAcc <- cm$overall["Accuracy"]*0.9
-        bestF1 <- cm$byClass["F1"]
-        bestModel[[2]]["F1"]  <- bestF1
-        bestModel[[2]]["Acc"]  <- bestAcc
-      }
-    } else {
-      if ( bestF1 < cm$byClass["F1"] ){
-        bestModel <- models[[i]]
-        bestF1 <- cm$byClass["F1"]
-        bestAcc <- cm$overall["Accuracy"]
-        bestModel[[2]]["F1"]  <- bestF1
-        bestModel[[2]]["Acc"]  <- bestAcc
-      }
-    }
-    
-  }
-  return( bestModel )
-}
-
-get.best.model.trained <- function( models ){
-  bestF1 <- 0
-  bestAcc <- 0
-  bestModel <- NULL
-  noF1 <- FALSE
+  if ( length(models) == 0 ) { return(NULL) }
   
   for ( i in 1:length(models) ){
     
@@ -65,7 +35,7 @@ get.best.model.trained <- function( models ){
       if ( bestAcc < currAcc*0.9 ){
         bestModel <- models[[i]]
         bestAcc <- currAcc*0.9
-        bestF1 <- cm$byClass["F1"]
+        bestF1 <- currF1
       }
     } else {
       if ( bestF1 < currF1 ){
@@ -79,13 +49,18 @@ get.best.model.trained <- function( models ){
   return( bestModel )
 }
 
-model.selection.best <- function( models, data.test ){
-  if ( length(models) == 1 ){
-    best.model <- models[[1]]
-  } else {
-    best.model <- get.best.model.by.f1_acc( models, data.test )
+model.selection.best <- function( models ){
+  return( get.best.model.by.f1_acc( models ) )
+}
+
+evaluate.models <- function( models, data.test ){
+  
+  for ( i in 1:length(models) ){
+    cm <- confusionMatrix( predict( models[[i]][[1]], data.test ), data.test$Grade3 )
+    models[[i]][[2]]["F1"] <- cm$byClass["F1"]
+    models[[i]][[2]]["Acc"] <- cm$overall["Accuracy"]
   }
-  return( best.model )
+  return(models)
 }
 
 deploy.by.window <- function( allData, asig, time.start, time.end ){
@@ -95,16 +70,28 @@ deploy.by.window <- function( allData, asig, time.start, time.end ){
   data.trans <- classif_utils.asig.trans(data.asig)
   data.part <- classif_utils.asig.part(data.trans)
   
+  sm <- summary( data.part$train$Grade3 )
+  
+  for ( i in sm ){ 
+    if ( i == 0 ) {
+      return(NULL)
+    }
+  }
+  
   models <- list()
-  models[[1]] <- list( train.glm(data.part$train), data.frame( Acc = 0, F1 = 0, Type = "LogisticRegression" ) )
-  return( model.selection.best(models, data.part$test) )
+  models[[1]] <- list( train.glm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Logistic Regression", stringsAsFactors = FALSE ) )
+  models[[2]] <- list( train.svm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Support Vector Machine", stringsAsFactors = FALSE ) )
+  models[[3]] <- list( train.nn(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Neural Networks", stringsAsFactors = FALSE ) )
+  
+  models <- evaluate.models( models, data.part$test )
+  return( model.selection.best(models) )
   
 }
 
 deploy.classification <- function(allData, asignature, years.ini){
   
   models.comp <- list()
-  
+ 
   if (nrow(allData[allData$Codigo.Asignatura %in% asignature,]) < 10) {
     return(NULL)
   }
@@ -112,13 +99,14 @@ deploy.classification <- function(allData, asignature, years.ini){
   # BY EACH TIME WINDOW, WE'LL GET THE BEST MODEL
   list.year <- 1
   for (year in years.ini) { # BY YEAR WINDOW
-    asig.model <- deploy.by.window(allData, asignature, toString(year), toString(year+4))
+    asig.model <- deploy.by.window(allData, asignature, toString(year), toString(year+5))
+    if (is.null(asig.model) ) {next()}
     models.comp[[list.year]] <- asig.model
     names(models.comp)[list.year] <- year
     list.year <- list.year+1
   }
-  
-  return( get.best.model.trained(models.comp) )
+  write("CLACULATE BEST MODELS", stdout())
+  return( model.selection.best(models.comp) )
   
 }
 
@@ -151,14 +139,12 @@ isis.models <- function(){
   for (asignature in asig.sistemas) { # BY ASIGNATURE
     write("============================ASIGNATURE============================", stdout())
     write(asignature, stdout())
-    if ( asignature == "PES1" || asignature == "PES2" || asignature == "EINL" ) {next()}
     asig.model <- deploy.classification( allData, asignature, years.ini )
     if (is.null(asig.model) ) {next()}
     best.models[[list.asig]] <- asig.model
     names(best.models)[list.asig] <- asignature
     list.asig <- list.asig+1
     write("============================END============================", stdout())
-    break
   }
 
   # SAVE MODELS
