@@ -7,6 +7,10 @@ source("Analisis/R_Scripts/models/Classification/support_vector.R")
 source("Analisis/R_Scripts/models/Classification/neural_network.R")
 
 NOTES = classif_utils.getDataCleanClassDir()
+CLASS_MODELS = "Data/Models/Classification/"
+CLASS_MODELS_DELTA = "/Models_Best_Delta"
+PLOTS_DIR = "Analisis/Plots/"
+PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Classification/",sep = "")
 
 # Only in Linux/Unix Systems - in Windows doesn't work - You should use parallel instead - This library is to parallelize, you can comment it
 # Take care of the number of cores
@@ -24,9 +28,9 @@ get.best.model.by.f1_acc <- function( models ){
   noF1 <- FALSE
   
   if ( length(models) == 0 ) { return(NULL) }
-  
+  test.model <<- models
   for ( i in 1:length(models) ){
-    
+    if ( is.null(models[[i]]) ){next()}
     currF1 <- models[[i]][[2]]["F1"]
     currAcc <- models[[i]][[2]]["Acc"]
       
@@ -129,23 +133,28 @@ deploy.classification <- function(allData, asignature, years.ini){
 getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
   
   models <- list()
-  list.model <- 1
-  for ( current.time.final in final.time:(init.time-1) ){
+  list.model <- 1; current.time.final <- final.time
+  while ( current.time.final > init.time ){
     
     models.by.window <- list()
-    list.model.window <- 1
-    for ( current.time.init in (current.time.final-1):init.time ){
+    list.model.window <- 1; current.time.init <- current.time.final-1
+    
+    while ( current.time.init >= init.time ){
+      
       write( paste( "TIME LAPSE: ", toString(current.time.init), toString(current.time.final) ), stdout() )
       asig.model <- deploy.by.window(allData, asig, current.time.init, current.time.final, filterPart = function( data.trans ){
         data.train <- data.trans[ -grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
         data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ), ] # TEST DATA
         return(list(train = na.omit(data.train), test = na.omit(data.test)))
       })
+      
       models.by.window[[list.model.window]] <- asig.model
       list.model.window <- list.model.window + 1
+      current.time.init <- current.time.init - 1
     }
     models[[list.model]] <- model.selection.best(models.by.window)
     list.model <- list.model + 1
+    current.time.final <- current.time.final - 1
   }
   return( models )
 }
@@ -166,9 +175,18 @@ getBestDeltaTime <- function(){
   list.model <- 1
   
   for ( asig in asig.sistemas ){
-     models[[list.model]] <- getBestDeltaTimeByAsig(allData, init.time, final.time, asig)
+     model.asig <- getBestDeltaTimeByAsig(allData, init.time, final.time, asig)
+     
+     classif_utils.createClassDir( paste( getClassificationModelsDir(), getClassificationModelsDeltaDir(), "/", asig, sep = "" ) )
+     
+     if ( is.null(model.asig) ){next()}
+     models[[list.model]] <- model.asig
+     for ( model in model.asig ){
+       classif_utils.save.model( model, 
+            paste( getClassificationModelsDeltaDir(), "/", asig, "/BestModelByWindowTime_", asig, "_", sep = "" ), 
+            paste( toString(model[[2]]$timeWindow[1]), "-", toString(model[[2]]$timeWindow[2]), sep = "" ) )
+     }
      list.model <- list.model + 1
-     classif_utils.save.model( models, "models_list-", "all-Models-DeltaTime" )
   }
   return( models )
 }
@@ -214,4 +232,134 @@ isis.models <- function(){
     classif_utils.save.model(best.models[[model.name]], "model-", gsub("\\s", "", model.name))
   }
   return(best.models)
+}
+
+# =======================================================================================================
+# ============================== ISIS CLASSIFICATION MODELS EVALUATE ====================================
+# =======================================================================================================
+
+loose.nocancel.benefit <- function(final.note){
+  return(which(final.note == "failed"))
+}
+pass.nocancel.benefit <- function(final.note){
+  return(which(final.note == "approved" ))
+}
+
+# MODEL BENEFIT
+model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
+  # GET ALL MODELS
+  models <- classif_utils.loaded.models.list( classif_utils.load.models( paste( CLASS_MODELS, CLASS_MODELS_DELTA, sep = "" ) ) )
+  data.results <- data.frame(data, Estado.Modelo = rep(unanalyzed,nrow(data)) )
+  levels(data.results$Estado.Modelo) <- c(levels(data.results$Estado.Modelo), c(wrong,right))
+  
+  # MODELS FILTER - APPEARANCE ON DATA
+  for (model.name in names(models)) {
+    model.name.f <- gsub("BestModelByWindowTime_","",model.name)
+    model.asignature <- gsub("_.*","",model.name.f)
+    model.years <- gsub(".*_","",model.name.f)
+    model.years.start <- strtoi(gsub("-.*","",model.years))
+    model.years.end <- strtoi(gsub(".*-","",model.years))
+    
+    appears.asig <- grep(model.asignature,data$Codigo.Asignatura) # DATA SAMPLES TO PRED BY ASIG
+    appears.year <- grep(toString(model.years.end),data$Periodo.Academico) # DATA SAMPLES TO PRED BY NEXT YEAR
+    appears.asig.year <- intersect(appears.asig,appears.year) # BY ASIG & NEXT YEAR
+    
+    if (length(appears.asig.year) > 0) {
+      # CHANGE TO COVERED BUT SUGGEST IN A WRONG WAY
+      data.results[appears.asig.year,]$Estado.Modelo <- wrong
+      
+      # PREDICT
+      test.data <- classif_utils.asig.trans(data[appears.asig.year,]) # GET DATA TO PREDICT
+      results <- predict(models[[model.name]][[1]],test.data) # PREDICT
+      
+      # CONDITION TO SUGGEST RIGHT
+      benefited <- condition.func(results)
+      
+      if (length(benefited) > 0) {
+        data.results[appears.asig.year[benefited],]$Estado.Modelo <- right
+      }
+    }
+  }
+  return(data.results)
+}
+
+
+isis.benefit.general <- function(){
+  # DATA ADQUIRE
+  allData <- read.csv(NOTES, header = TRUE)
+  
+  # BEST CLASSIFICATION MODEL ISIS
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
+  asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
+  asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
+  asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
+   
+  data.filtered <- classif_utils.data.adq(allData, asig.sistemas)
+  
+  data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
+  data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
+  
+  data.loose <- data.nocancel[ data.nocancel$Nota.Final < 30 & data.nocancel$Nota.Final != 0, ] # NO CANCEL & LOOSE
+  data.pass <- data.nocancel[ data.nocancel$Nota.Final >= 30 & data.nocancel$Nota.Final <= 50, ] # NO CANCEL & PASS
+  
+  # DROPLEVELS
+  data.cancel <- droplevels(data.cancel) # CLEAN UNUSED FACTORS
+  data.loose <- droplevels(data.loose) # CLEAN UNUSED FACTORS
+  data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
+  
+  # GET BENEFITS BY MODELS
+  results.loose <- model.benefit(data.loose,"Sin Analizar",
+                                 "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
+  
+  results.pass <- model.benefit(data.pass,"Sin Analizar",
+                                "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
+  
+  # PLOTS
+  files <- c(paste(PLOTS_DIR_REG,"total_benefit.html",sep = ""),
+             paste(PLOTS_DIR_REG,"total_benefit_unanalyzed.html",sep = ""))
+  classif_utils.plot.sunburst.tool(data.cancel,results.loose,results.pass,files)
+}
+
+isis.benefit.asig <- function(){
+  
+  # DATA ADQUIRE
+  allData <- read.csv(NOTES, header = TRUE)
+  
+  # LINEAR MODEL ISIS
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
+  asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
+  asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
+  asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
+  
+  for (asig in asig.sistemas) {
+    data.filtered <- classif_utils.data.adq(allData, asig)
+    data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
+    data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
+    data.loose <- data.nocancel[ data.nocancel$Nota.Final < 30 & data.nocancel$Nota.Final != 0, ] # NO CANCEL & LOOSE
+    data.pass <- data.nocancel[ data.nocancel$Nota.Final >= 30 & data.nocancel$Nota.Final <= 50, ] # NO CANCEL & PASS
+    
+    # DROPLEVELS
+    data.cancel <- droplevels(data.cancel) # CLEAN UNUSED FACTORS
+    data.loose <- droplevels(data.loose) # CLEAN UNUSED FACTORS
+    data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
+    
+    # GET BENEFITS BY MODELS
+    results.loose <- model.benefit(data.loose,"Sin Analizar",
+                                   "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
+    
+    results.pass <- model.benefit(data.pass,"Sin Analizar",
+                                  "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
+    
+    # PLOTS
+    asig.f <- gsub("\\s", "",asig)
+    dir <- paste(PLOTS_DIR_REG,asig.f,"/",sep = "")
+    if (!dir.exists(dir)) {
+      dir.create(dir)
+    }
+    files <- c(paste(dir,asig.f,"_benefit.html",sep = ""),
+               paste(dir,asig.f,"_benefit_unanalyzed.html",sep = ""))
+    classif_utils.plot.sunburst.tool(data.cancel,results.loose,results.pass,files)
+  }
 }

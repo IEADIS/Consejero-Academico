@@ -2,10 +2,13 @@
 library(caret)
 library(plotly)
 library(plyr)
+library(cowplot)
+library(scatterplot3d)
+library(gridExtra)
 source("Analisis/R_Scripts/utils.R")
 
-PLOTS_SOURCE_CLASS = "/Models/Classification"
-PLOTS_SOURCE_DIR_STATS = "/Statistics"
+PLOTS_SOURCE_CLASS = "Models/Classification/"
+PLOTS_SOURCE_DIR_STATS = "Statistics/"
 
 # =======================================================================================================
 # ========================================= DATA UTILS ==================================================
@@ -19,9 +22,7 @@ classif_utils.getDataCleanClassDir <- function(){
 # ADQUISITION OF DATA BY ASIGNATURE AND TIME WINDOW [TIME.START < TIME.END]
 classif_utils.asig.adq <- function(data, asig, time.start, time.end){
   
-  data.asig <- data[ data$Codigo.Asignatura %in% asig, ] # ASIGNATURE
-  data.asig <- data.asig[ data.asig$Periodo.Academico != "2013-i", ] # WEIRD DATA
-  data.asig <- data.asig[ data.asig$Nota.Final != 0 & data.asig$Estado.Asignatura != "Retiro", ] # NO ACCOMP
+  data.asig <- classif_utils.data.adq(data, asig)
   
   total.ind <- c()
   for (i in c(time.start:time.end)) {
@@ -29,6 +30,17 @@ classif_utils.asig.adq <- function(data, asig, time.start, time.end){
     total.ind <- c(total.ind,ind)
   }
   data.asig <- data.asig[total.ind,] # TIME WINDOW
+  return(data.asig)
+}
+
+# DATA ADQUISITION FILTER
+classif_utils.data.adq <- function(data, asig){
+  data.asig <- data[ data$Codigo.Asignatura %in% asig, ] # ASIGNATURE
+  data.asig <- data.asig[ data.asig$Periodo.Academico != "2013-i", ] # WEIRD DATA
+  data.asig <- data.asig[ data.asig$Nota.Final != 0 & data.asig$Estado.Asignatura != "Retiro", ] # NO ACCOMP
+  
+  data.asig <- droplevels(data.asig) # CLEAN UNUSED FACTORS
+  
   return(data.asig)
 }
 
@@ -52,12 +64,39 @@ classif_utils.asig.part <- function(data.trans){
 
 
 # =======================================================================================================
-# ========================================= SAVE MODEL ==================================================
+# ========================================= SAVE/LOAD MODEL ==================================================
 # =======================================================================================================
+
+classif_utils.createClassDir <- function(path){
+  dir.create( path, showWarnings = FALSE )
+}
 
 classif_utils.save.model <- function(model, model.type, model.name){
   MODELS <- getClassificationModelsDir()
   saveRDS(model, file = paste(MODELS, model.type, model.name, ".rds", sep = ""))
+}
+
+classif_utils.load.models <- function(files.path){
+  models.files <- list.files(path = files.path)
+  models <- list()
+  for (file.model in models.files) {
+    models[[file.model]] <- load.models(paste(files.path,"/",file.model, "/",sep = ""))
+  }
+  return(models)
+}
+
+classif_utils.loaded.models.list <- function(models){
+  models.list <- list()
+  for (name in names(models)) {
+    for ( model.name in names(models[[name]]) ){
+      models.list[[model.name]] <- models[[name]][[model.name]]
+    }
+  }
+  return(models.list)
+}
+
+classif_utils.load.model <- function(file.model){
+  return(readRDS(file.model))
 }
 
 # =======================================================================================================
@@ -73,16 +112,163 @@ classif_utils.getMetricsBinomial <- function( pred, class ){
 # ============================================ PLOTS ====================================================
 # =======================================================================================================
 
-classif_utils.plotNumberOfModelsByType <- function( models ){
+classif_utils.plotMetricsOfModelsTableByModel <- function(models, ext = ".png"){
+  
+  dir <-PLOTS_DIR_REG
+  
+  for ( name in names(models) ){
+    
+    if ( length(models[[name]]) == 0 ){ next() }
+    
+    classif_utils.plotNumberOfModelsByType(models[[name]], name = "TrainedAlgorithms", dir_stats = paste( gsub("\\s", "",name), "/", sep = "" ))
+    
+    data.table.metrics <- as.data.frame( plyr::laply(models[[name]], function(data){ 
+      return( c(data[[2]][1,], 
+                "TimeWindowEnd" = data[[2]][2,5], 
+                "Lambda" = (data[[2]][2,5] - data[[2]][1,5]) )
+      ) 
+    } ), strinsAsFactors = F )
+    df <- lapply(data.table.metrics, unlist)
+    df <- as.data.frame(df, stringsAsFactors = FALSE)
+    
+    p <- plot_ly(
+      type = 'table',
+      header = list(
+        values = c('<b>Asignature</b>',
+                   '<b>Time Start</b>',
+                   '<b>Time End</b>',
+                   '<b>Lambda</b>',
+                   '<b>Acc</b>',
+                   '<b>F1</b>'),
+        line = list(color = '#506784'),
+        fill = list(color = '#119DFF'),
+        align = c('left','center'),
+        font = list(color = 'white', size = 12)
+      ),
+      cells = list(
+        values = rbind(df$Asignature,
+                       df$timeWindow,
+                       df$TimeWindowEnd,
+                       df$Lambda,
+                       round(df$Acc, 2),
+                       round(df$F1, 2)),
+        line = list(color = '#506784'),
+        align = c('left', 'center'),
+        font = list(color = c('#506784'), size = 12)
+      ))
+    orca(p, paste(dir, gsub("\\s", "",name), "/" ,"LambdaSelection.png",sep = ""))
+    
+  }
+  
+}
+
+classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable", ext = ".png" ){
+  
+  dir <- paste( PLOTS_DIR_REG, PLOTS_SOURCE_DIR_STATS, name, sep = "" )
+  
+  data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
+    return( c(data[[2]][1,], 
+        "TimeWindowEnd" = data[[2]][2,5], 
+        "Lambda" = (data[[2]][2,5] - data[[2]][1,5]) )
+    ) 
+  } ), strinsAsFactors = F )
+  png( paste(dir, ext, sep = ""), height = 30*nrow(data.table.metrics), width = 200*ncol(data.table.metrics))
+  df <- lapply(data.table.metrics, unlist)
+  df <- as.data.frame(df, stringsAsFactors = FALSE)
+  grid.table(df)
+  dev.off()
+  
+}
+
+classif_utils.plotNumberOfModelsByType <- function( models, name = "TrainedAlgorithmsWindowPart", ext = ".png", dir_stats = PLOTS_SOURCE_DIR_STATS ){
   types <- summary( factor(laply(models, function(data){ return( data[[2]]$Type ) } ) ) )
+  test <<- models
   data <- data.frame( "Categorie" = names(types), "vals" = types )
+  
+  dir <- paste( PLOTS_DIR_REG, dir_stats, name, sep = "" )
   
   p <- plot_ly(data, labels = ~Categorie, values = ~vals, type = 'pie') %>%
     layout(title = 'Porcentaje de Algoritmos entrenados',
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-  orca(p, file = paste( PLOTS_SOURCE, PLOTS_SOURCE_CLASS, PLOTS_SOURCE_DIR_STATS, "/TrainedAlgorithmsWindowPart.png", sep = "" ))
+  orca(p, file = paste(dir, ext, sep = ""))
+  htmlwidgets::saveWidget(as_widget(p), 
+          file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
+                    basename( paste(dir, ".html", sep = "") )))
   return(p)
 }
 
+# PLOT BENEFIT
+classif_utils.plot.benefit <- function(results,file_path){
+  results$App <- rep(1,nrow(results))
+  p <- plot_ly(results, labels = ~Estado.Modelo, values = ~App, type = 'pie') %>%
+    layout(title = 'Uso de la Herramienta por Estudiante',
+           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  export(p, file_path)
+}
+
+classif_utils.plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,files_path){
+  
+  covered.asigs <- union(union(levels(cancel.data$Codigo.Asignatura),levels(loose.data$Codigo.Asignatura)),levels(pass.data$Codigo.Asignatura))
+ 
+  
+  all.values <- data.frame(total = sum(nrow(cancel.data),nrow(pass.data),nrow(loose.data)),
+                           canceled = nrow(cancel.data),
+                           loose = nrow(loose.data),
+                           pass = nrow(pass.data),
+                           unanalyzed.loose = strtoi(summary(loose.data$Estado.Modelo)["Sin Analizar"]),
+                           wrong.loose = strtoi(summary(loose.data$Estado.Modelo)["Sugiere Continuar"]),
+                           right.loose = strtoi(summary(loose.data$Estado.Modelo)["Sugiere Cancelar"]),
+                           unanalyzed.pass = strtoi(summary(pass.data$Estado.Modelo)["Sin Analizar"]),
+                           wrong.pass = strtoi(summary(pass.data$Estado.Modelo)["Sugiere Cancelar"]),
+                           right.pass = strtoi(summary(pass.data$Estado.Modelo)["Sugiere Continuar"]))
+  d <- data.frame(
+    labels = c("Student","Cancelo","Perdio","Paso",
+               "Sug. Continuar","Sug. Cancelar",
+               "Sug. Cancelar ","Sug. Continuar "),
+    parents = c("","Student","Student","Student",
+                "Perdio","Perdio",
+                "Paso","Paso"),
+    values = c(all.values$total - all.values$unanalyzed.loose - all.values$unanalyzed.pass,
+               all.values$cancel,all.values$loose - all.values$unanalyzed.loose,all.values$pass - all.values$unanalyzed.pass,
+               all.values$wrong.loose,all.values$right.loose,
+               all.values$wrong.pass,all.values$right.pass),
+    stringsAsFactors = FALSE
+  )
+  
+  percentages <- c(round((d$values[1:4]/d$values[1])*100),
+                   round((d$values[5:6]/d$values[3])*100),
+                   round((d$values[7:8]/d$values[4])*100))
+  
+  d.unanalyzed <- data.frame(
+    labels = c("Student","Cancelo","Perdio","Paso",
+               "Sin Analizar","Sug. Continuar","Sug. Cancelar",
+               "Sin Analizar ","Sug. Cancelar ","Sug. Continuar "),
+    parents = c("","Student","Student","Student",
+                "Perdio","Perdio","Perdio",
+                "Paso","Paso","Paso"),
+    values = c(all.values$total,all.values$cancel,all.values$loose,all.values$pass,
+               all.values$unanalyzed.loose,all.values$wrong.loose,all.values$right.loose,
+               all.values$unanalyzed.pass,all.values$wrong.pass,all.values$right.pass),
+    stringsAsFactors = FALSE
+  )
+
+  percentages.unanalyzed <- c(round((d.unanalyzed$values[1:4]/d.unanalyzed$values[1])*100),
+                              round((d.unanalyzed$values[5:7]/d.unanalyzed$values[3])*100),
+                              round((d.unanalyzed$values[8:10]/d.unanalyzed$values[4])*100))
+  
+  p <- plot_ly(d, labels = ~labels, parents = ~parents, values = ~values,
+               text = ~paste(percentages, '%'),
+               type = 'sunburst',branchvalues = 'total') %>%
+    layout(title = 'Beneficios de la Herramienta')
+  
+  p.unanalyzed <- plot_ly(d.unanalyzed, labels = ~labels, parents = ~parents, values = ~values,
+                          text = ~paste(percentages.unanalyzed, '%'),
+                          type = 'sunburst',branchvalues = 'total') %>%
+    layout(title = 'Beneficios de la Herramienta')
+  
+  htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(files_path[1])),basename(files_path[1])))
+  htmlwidgets::saveWidget(as_widget(p.unanalyzed), file.path(normalizePath(dirname(files_path[2])),basename(files_path[2])))
+}
 

@@ -269,6 +269,10 @@ getClassificationModelsDir <- function(){
   return("Data/Models/Classification/")
 }
 
+getClassificationModelsDeltaDir <- function(){
+  return("/Models_Best_Delta")
+}
+
 getDataCleanDir <- function(){
   return("Data/notas_clean.csv")
 }
