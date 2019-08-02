@@ -63,25 +63,35 @@ evaluate.models <- function( models, data.test ){
   return(models)
 }
 
-deploy.by.window <- function( allData, asig, time.start, time.end ){
+filter.data <- function( allData, asig, time.start, time.end, filterByTime = classif_utils.asig.adq, filterTransform = classif_utils.asig.trans, filterPart = classif_utils.asig.part ){
+  
+  data.asig <- filterByTime(data = allData, asig = asig, time.start = time.start, time.end = time.end)
+  data.trans <- filterTransform(data.asig)
+  data.part <- filterPart(data.trans)
+  
+  return( data.part )
+}
+
+deploy.by.window <- function( allData, asig, time.start, time.end, filterPart = classif_utils.asig.part ){
   
   # ADQUISITION AND FILTERING
-  data.asig <- classif_utils.asig.adq(data = allData, asig = asig, time.start = time.start, time.end = time.end)
-  data.trans <- classif_utils.asig.trans(data.asig)
-  data.part <- classif_utils.asig.part(data.trans)
+  
+  data.part <- filter.data(allData, asig, time.start, time.end, filterPart = filterPart )
   
   sm <- summary( data.part$train$Grade3 )
   
   for ( i in sm ){ 
     if ( i == 0 ) {
+      write("================= OUT =====================", stdout())
+      write( asig , stdout() )
       return(NULL)
     }
   }
   
   models <- list()
-  models[[1]] <- list( train.glm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Logistic Regression", stringsAsFactors = FALSE ) )
-  models[[2]] <- list( train.svm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Support Vector Machine", stringsAsFactors = FALSE ) )
-  models[[3]] <- list( train.nn(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Neural Networks", stringsAsFactors = FALSE ) )
+  models[[1]] <- list( train.glm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Logistic Regression", timeWindow = c(time.start, time.end), stringsAsFactors = FALSE ) )
+  models[[2]] <- list( train.svm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Support Vector Machine", timeWindow = c(time.start, time.end), stringsAsFactors = FALSE ) )
+  models[[3]] <- list( train.nn(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Neural Networks", timeWindow = c(time.start, time.end), stringsAsFactors = FALSE ) )
   
   models <- evaluate.models( models, data.part$test )
   return( model.selection.best(models) )
@@ -110,6 +120,58 @@ deploy.classification <- function(allData, asignature, years.ini){
   
 }
 
+
+# =======================================================================================================
+# =================================== CALCULATE BEST METRICS ============================================
+# =======================================================================================================
+
+
+getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
+  
+  models <- list()
+  list.model <- 1
+  for ( current.time.final in final.time:(init.time-1) ){
+    
+    models.by.window <- list()
+    list.model.window <- 1
+    for ( current.time.init in (current.time.final-1):init.time ){
+      write( paste( "TIME LAPSE: ", toString(current.time.init), toString(current.time.final) ), stdout() )
+      asig.model <- deploy.by.window(allData, asig, current.time.init, current.time.final, filterPart = function( data.trans ){
+        data.train <- data.trans[ -grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
+        data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ), ] # TEST DATA
+        return(list(train = na.omit(data.train), test = na.omit(data.test)))
+      })
+      models.by.window[[list.model.window]] <- asig.model
+      list.model.window <- list.model.window + 1
+    }
+    models[[list.model]] <- model.selection.best(models.by.window)
+    list.model <- list.model + 1
+  }
+  return( models )
+}
+
+getBestDeltaTime <- function(){
+  
+  set.seed(123)
+  
+  # GET DATA AND SET VARIABLES
+  allData <- read.csv(NOTES, header = TRUE)
+  init.time <- 2009
+  final.time <- 2016
+  
+  # GET RELEVANT ASIGNATURES
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  
+  models <- list()
+  list.model <- 1
+  
+  for ( asig in asig.sistemas ){
+     models[[list.model]] <- getBestDeltaTimeByAsig(allData, init.time, final.time, asig)
+     list.model <- list.model + 1
+     classif_utils.save.model( models, "models_list-", "all-Models-DeltaTime" )
+  }
+  return( models )
+}
 
 # =======================================================================================================
 # ================================= ISIS CLASSIFICATION MODELS ==========================================

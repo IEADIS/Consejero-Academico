@@ -18,6 +18,7 @@ classif_utils.getDataCleanClassDir <- function(){
 
 # ADQUISITION OF DATA BY ASIGNATURE AND TIME WINDOW [TIME.START < TIME.END]
 classif_utils.asig.adq <- function(data, asig, time.start, time.end){
+  
   data.asig <- data[ data$Codigo.Asignatura %in% asig, ] # ASIGNATURE
   data.asig <- data.asig[ data.asig$Periodo.Academico != "2013-i", ] # WEIRD DATA
   data.asig <- data.asig[ data.asig$Nota.Final != 0 & data.asig$Estado.Asignatura != "Retiro", ] # NO ACCOMP
@@ -34,7 +35,7 @@ classif_utils.asig.adq <- function(data, asig, time.start, time.end){
 # TRANSFORMATION OF THE DATA TO A FORMAT ACCEPTED BY THE MODELS TO TRAIN
 classif_utils.asig.trans <- function(data){
   data.trans <- data.frame( Asig = data$Codigo.Asignatura, Grade1 = data$nota1, Grade2 = data$nota2, 
-                            Grade3 = factor(+(data$Nota.Final >= 30)) ) # VARIABLES SELECTION
+                            Grade3 = factor(+(data$Nota.Final >= 30)), Periodo = data$Periodo.Academico ) # VARIABLES SELECTION
   levels(data.trans$Grade3) <- c("0" = "failed", "1" = "approved")
   return(data.trans)
 }
