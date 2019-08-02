@@ -4,10 +4,8 @@ library(plotly)
 source("Analisis/R_Scripts/utils.R")
 source("Analisis/R_Scripts/models/Regression/regression.R")
 
-PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Regression/",sep = "")
-
 # =======================================================================================================
-# ===================================== MODEL BENEFITS ==================================================
+# ====================================== GRADES ADQUIS ==================================================
 # =======================================================================================================
 
 # DATA ADQUISITION FILTER
@@ -20,6 +18,10 @@ data.adq <- function(data, asig){
   
   return(data.asig)
 }
+
+# =======================================================================================================
+# ======================================== PREDICTIONS ==================================================
+# =======================================================================================================
 
 # MODEL BENEFIT
 model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
@@ -41,8 +43,6 @@ model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
     appears.year <- grep(toString(model.years.end+1),data$Periodo.Academico) # DATA SAMPLES TO PRED BY NEXT YEAR
     appears.asig.year <- intersect(appears.asig,appears.year) # BY ASIG & NEXT YEAR
     
-    print(paste("MODEL NAME :",model.name.f))
-    
     if (length(appears.asig.year) > 0) {
       # CHANGE TO COVERED BUT SUGGEST IN A WRONG WAY
       data.results[appears.asig.year,]$Estado.Modelo <- wrong
@@ -54,9 +54,6 @@ model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
       # CONDITION TO SUGGEST RIGHT
       note.final <- rowMeans(data.frame(data.results[appears.asig.year,]$nota1,data.results[appears.asig.year,]$nota2,results$pred))
       benefited <- condition.func(note.final)
-      
-      print(appears.asig.year)
-      print(summary(note.final))
       
       if (length(benefited) > 0) {
         data.results[appears.asig.year[benefited],]$Estado.Modelo <- right
@@ -75,6 +72,10 @@ pass.nocancel.benefit <- function(final.note){
   return(which(final.note >= 30))
 }
 
+# =======================================================================================================
+# ====================================== BENEFIT PLOTS ==================================================
+# =======================================================================================================
+
 # PLOT BENEFIT
 plot.benefit <- function(results,file_path){
   results$App <- rep(1,nrow(results))
@@ -85,25 +86,73 @@ plot.benefit <- function(results,file_path){
   export(p, file_path)
 }
 
-plot.sunburst.tool <- function(){
+plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,files_path){
+  covered.asigs <- union(union(levels(cancel.data$Codigo.Asignatura),levels(loose.data$Codigo.Asignatura)),levels(pass.data$Codigo.Asignatura))
+  all.values <- data.frame(total = sum(nrow(cancel.data),nrow(pass.data),nrow(loose.data)),
+                           canceled = nrow(cancel.data),
+                           loose = nrow(loose.data),
+                           pass = nrow(pass.data),
+                           unanalyzed.loose = strtoi(summary(loose.data$Estado.Modelo)["Sin Analizar"]),
+                           wrong.loose = strtoi(summary(loose.data$Estado.Modelo)["Sugiere Continuar"]),
+                           right.loose = strtoi(summary(loose.data$Estado.Modelo)["Sugiere Cancelar"]),
+                           unanalyzed.pass = strtoi(summary(pass.data$Estado.Modelo)["Sin Analizar"]),
+                           wrong.pass = strtoi(summary(pass.data$Estado.Modelo)["Sugiere Cancelar"]),
+                           right.pass = strtoi(summary(pass.data$Estado.Modelo)["Sugiere Continuar"]))
+  
   d <- data.frame(
     labels = c("Student","Cancelo","Perdio","Paso",
-               "Sin Analizar L", "Sin Analizar P"),
+               "Sug. Continuar","Sug. Cancelar",
+               "Sug. Cancelar ","Sug. Continuar "),
     parents = c("","Student","Student","Student",
-                "Perdio","Paso"),
-    values = c(37,15,10,12,
-               10,12),
+                "Perdio","Perdio",
+                "Paso","Paso"),
+    values = c(all.values$total - all.values$unanalyzed.loose - all.values$unanalyzed.pass,
+               all.values$cancel,all.values$loose - all.values$unanalyzed.loose,all.values$pass - all.values$unanalyzed.pass,
+               all.values$wrong.loose,all.values$right.loose,
+               all.values$wrong.pass,all.values$right.pass),
     stringsAsFactors = FALSE
   )
   
+  percentages <- c(round((d$values[1:4]/d$values[1])*100),
+                   round((d$values[5:6]/d$values[3])*100),
+                   round((d$values[7:8]/d$values[4])*100))
+  
+  d.unanalyzed <- data.frame(
+    labels = c("Student","Cancelo","Perdio","Paso",
+               "Sin Analizar","Sug. Continuar","Sug. Cancelar",
+               "Sin Analizar ","Sug. Cancelar ","Sug. Continuar "),
+    parents = c("","Student","Student","Student",
+                "Perdio","Perdio","Perdio",
+                "Paso","Paso","Paso"),
+    values = c(all.values$total,all.values$cancel,all.values$loose,all.values$pass,
+               all.values$unanalyzed.loose,all.values$wrong.loose,all.values$right.loose,
+               all.values$unanalyzed.pass,all.values$wrong.pass,all.values$right.pass),
+    stringsAsFactors = FALSE
+  )
+  
+  percentages.unanalyzed <- c(round((d$values[1:4]/d$values[1])*100),
+                              round((d$values[5:7]/d$values[3])*100),
+                              round((d$values[8:10]/d$values[4])*100))
+  
   p <- plot_ly(d, labels = ~labels, parents = ~parents, values = ~values,
-               text = ~paste(values, '%'),
-               type = 'sunburst',branchvalues = 'total')
-  print(p)
+               text = ~paste(percentages, '%'),
+               type = 'sunburst',branchvalues = 'total') %>%
+    layout(title = 'Beneficios de la Herramienta')
+  
+  p.unanalyzed <- plot_ly(d.unanalyzed, labels = ~labels, parents = ~parents, values = ~values,
+               text = ~paste(percentages.unanalyzed, '%'),
+               type = 'sunburst',branchvalues = 'total') %>%
+    layout(title = 'Beneficios de la Herramienta')
+  
+  htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(files_path[1])),basename(files_path[1])))
+  htmlwidgets::saveWidget(as_widget(p.unanalyzed), file.path(normalizePath(dirname(files_path[2])),basename(files_path[2])))
 }
 
-# MAIN
-isis.benefit <- function(){
+# =======================================================================================================
+# ======================================= ISIS BENEFIT ==================================================
+# =======================================================================================================
+
+isis.benefit.general <- function(){
   # DATA ADQUIRE
   allData <- read.csv(NOTES, header = TRUE)
   # LINEAR MODEL ISIS
@@ -114,23 +163,66 @@ isis.benefit <- function(){
   asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
   
   data.filtered <- data.adq(allData, asig.sistemas)
+  data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
   data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
   data.loose <- data.nocancel[ data.nocancel$Nota.Final < 30 & data.nocancel$Nota.Final != 0, ] # NO CANCEL & LOOSE
-  data.pass <- data.nocancel[ data.nocancel$Nota.Final >= 30 & data.nocancel$Nota.Final <= 5, ] # NO CANCEL & PASS
+  data.pass <- data.nocancel[ data.nocancel$Nota.Final >= 30 & data.nocancel$Nota.Final <= 50, ] # NO CANCEL & PASS
   
   # DROPLEVELS
+  data.cancel <- droplevels(data.cancel) # CLEAN UNUSED FACTORS
   data.loose <- droplevels(data.loose) # CLEAN UNUSED FACTORS
   data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
   
   # GET BENEFITS BY MODELS
-  results.loose <- model.benefit(data.filtered,"Sin Analizar",
+  results.loose <- model.benefit(data.loose,"Sin Analizar",
                            "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
   
-  # results.pass <- model.benefit(data.filtered,"Sin Analizar",
-  #                                "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
+  results.pass <- model.benefit(data.pass,"Sin Analizar",
+                                "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
   
-  # # PLOTS
-  # plot.benefit(results,paste(PLOTS_DIR_REG,"uso_herrmaienta.png",sep = ""))
-  # infoData(data.filtered,paste(PLOTS_DIR_REG,"notas.png",sep = ""))
-  return(results.loose)
+  # PLOTS
+  files <- c(paste(PLOTS_DIR_REG,"total_benefit.html",sep = ""),
+             paste(PLOTS_DIR_REG,"total_benefit_unanalyzed.html",sep = ""))
+  plot.sunburst.tool(data.cancel,results.loose,results.pass,files)
+}
+
+isis.benefit.asig <- function(){
+  # DATA ADQUIRE
+  allData <- read.csv(NOTES, header = TRUE)
+  # LINEAR MODEL ISIS
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
+  asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
+  asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
+  asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
+  
+  for (asig in asig.sistemas) {
+    data.filtered <- data.adq(allData, asig)
+    data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
+    data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
+    data.loose <- data.nocancel[ data.nocancel$Nota.Final < 30 & data.nocancel$Nota.Final != 0, ] # NO CANCEL & LOOSE
+    data.pass <- data.nocancel[ data.nocancel$Nota.Final >= 30 & data.nocancel$Nota.Final <= 50, ] # NO CANCEL & PASS
+    
+    # DROPLEVELS
+    data.cancel <- droplevels(data.cancel) # CLEAN UNUSED FACTORS
+    data.loose <- droplevels(data.loose) # CLEAN UNUSED FACTORS
+    data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
+    
+    # GET BENEFITS BY MODELS
+    results.loose <- model.benefit(data.loose,"Sin Analizar",
+                                   "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
+    
+    results.pass <- model.benefit(data.pass,"Sin Analizar",
+                                  "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
+    
+    # PLOTS
+    asig.f <- gsub("\\s", "",asig)
+    dir <- paste(PLOTS_DIR_REG,asig.f,"/",sep = "")
+    if (!dir.exists(dir)) {
+      dir.create(dir)
+    }
+    files <- c(paste(dir,asig.f,"_benefit.html",sep = ""),
+               paste(dir,asig.f,"_benefit_unanalyzed.html",sep = ""))
+    plot.sunburst.tool(data.cancel,results.loose,results.pass,files)
+  }
 }

@@ -8,6 +8,7 @@ source("Analisis/R_Scripts/utils.R")
 NOTES = "Data/notas_clean.csv"
 LM_MODELS = "Data/Modelos/Regresion/Lineal/"
 PLOTS_DIR = "Analisis/Plots/"
+PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Regression/",sep = "")
 
 
 # =======================================================================================================
@@ -141,7 +142,7 @@ model.selection.lm.app <- function(models, test.results, asignature){ # BY APPEA
 plots.lm <- function(lambda.results,models,asig,selected.lambda){
   
   asig <- gsub("\\s", "",asig)
-  dir <- paste(PLOTS_DIR,"MODELS/Regression/",asig,"/",sep = "")
+  dir <- paste(PLOTS_DIR_REG,asig,"/",sep = "")
   dir.create(dir)
   
   # LAMBDA TABLE RESULTS
