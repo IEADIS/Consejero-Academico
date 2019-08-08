@@ -19,7 +19,7 @@ PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Regression/",sep = "")
 asig.adq <- function(data, asig, time.start, time.end){
   data.asig <- data[ data$Codigo.Asignatura %in% asig, ] # ASIGNATURE
   data.asig <- data.asig[ data.asig$Periodo.Academico != "2013-i", ] # WEIRD DATA
-  data.asig <- data.asig[ data.asig$Nota.Final != 0 & data.asig$Estado.Asignatura != "Retiro", ] # NO ACCOMP
+  data.asig <- data.asig[ data.asig$Nota.Final > 0 & data.asig$Nota.Final <= 50 & !(data.asig$Estado.Asignatura %in% c("Retiro","CancelaciaIn")), ] # NO ACCOMP
   
   total.ind <- c()
   for (i in c(time.start:time.end)) {
@@ -36,13 +36,12 @@ asig.trans <- function(data){
   return(data.trans)
 }
 
-asig.part <- function(data.trans){
-  m <- nrow(data.trans) # LENGTH OF DATA
-  data.trans <- data.trans[sample(m), ] # RANDOM SAMPLES
+asig.part <- function(data,last.year){ # WALK-BACKWARD APPROACH
   
-  data.train <- data.trans[1:round(m*0.7),] # TRAINING DATA - 70%
-  data.test <- data.trans[round(m*0.7)+1:round(m*0.3),] # TEST DATA - 30%
-  return(list(train = na.omit(data.train), test = na.omit(data.test)))
+  data.test <- data[sub("-.*","",droplevels(data$Periodo.Academico)) %in% last.year,] 
+  data.train <- data[!(sub("-.*","",droplevels(data$Periodo.Academico)) %in% last.year),]
+
+  return(list(train = na.omit(data.train[sample(nrow(data.train)),]), test = na.omit(data.test[sample(nrow(data.test)),])))
 }
 
 
@@ -312,18 +311,19 @@ deploy.lm <- function(asig,time.start,time.end){
   if (nrow(data.asig[data.asig$Codigo.Asignatura %in% asig,]) < 20) {
     return(NULL)
   }
-  data.trans <- asig.trans(data.asig)
-  data.part <- asig.part(data.trans)
+  data.part <- asig.part(data.asig,time.end)
+  data.trans.train <- asig.trans(data.part$train)
+  data.trans.test <- asig.trans(data.part$test)
   
   # TRAINING
-  model <- lm.train(data.part$train[,-1])
+  model <- lm.train(data.trans.train[,-1])
   
   # TESTING
-  test.result <- lm.test(model,data.part$test[,-1])
+  test.result <- lm.test(model,data.trans.test[,-1])
   
   # SAVING DATA
-  model.data <- data.frame(Asignature = unique(data.part$test$Asig),
-                           TimeWindow = toString(strtoi(time.end) - strtoi(time.start)),
+  model.data <- data.frame(Asignature = unique(data.trans.test$Asig),
+                           TimeWindow = toString((strtoi(time.end) - strtoi(time.start))+1),
                            TimePred = toString(strtoi(time.end)+1),
                            RMSE = test.result$RMSE, Rsquared = test.result$Rsquared,
                            stringsAsFactors = FALSE)
@@ -338,7 +338,7 @@ isis.models <- function(){
   # DATA ADQUIRE
   allData <- read.csv(NOTES, header = TRUE)
   # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)[1:2]
   asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
@@ -368,7 +368,7 @@ isis.models <- function(){
         if (any(is.na(asig.model$Model$results))) {next()} # THE MODEL CONTAINS NAs RESAMPLES, NO SENSE MODEL
         models.comp <- rbind(models.comp, asig.model$Data)
         models.data[[list.asig]][[list.year.pred]][[list.lambda]] <- asig.model$Model
-        names(models.data[[list.asig]][[list.year.pred]])[list.lambda] <- year.diff-1
+        names(models.data[[list.asig]][[list.year.pred]])[list.lambda] <- year.diff
         list.lambda <- list.lambda+1
       }
       names(models.data[[list.asig]])[list.year.pred] <- year.pred
