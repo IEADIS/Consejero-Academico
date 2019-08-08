@@ -21,16 +21,19 @@ registerDoMC(cores = 5)
 # ================================= DEPLOY CLASSIFICATION MODELS ========================================
 # =======================================================================================================
 
-get.best.model.by.f1_acc <- function( models ){
+get.best.model.by.f1_acc <- function( models, getIndex  = FALSE ){
   bestF1 <- 0
   bestAcc <- 0
   bestModel <- NULL
+  bestI <- -1
   noF1 <- FALSE
+  index <- 1
   
   if ( length(models) == 0 ) { return(NULL) }
-  test.model <<- models
+
   for ( i in 1:length(models) ){
     if ( is.null(models[[i]]) ){next()}
+    
     currF1 <- models[[i]][[2]]["F1"]
     currAcc <- models[[i]][[2]]["Acc"]
       
@@ -40,12 +43,14 @@ get.best.model.by.f1_acc <- function( models ){
         bestModel <- models[[i]]
         bestAcc <- currAcc*0.9
         bestF1 <- currF1
+        if (getIndex) bestModel$data$bestIndex <- i
       }
     } else {
       if ( bestF1 < currF1 ){
         bestModel <- models[[i]]
         bestF1 <- currF1
         bestAcc <- currAcc
+        if (getIndex) bestModel$data$bestIndex <- i
       }
     }
     
@@ -53,8 +58,8 @@ get.best.model.by.f1_acc <- function( models ){
   return( bestModel )
 }
 
-model.selection.best <- function( models ){
-  return( get.best.model.by.f1_acc( models ) )
+model.selection.best <- function( models, getIndex  = FALSE ){
+  return( get.best.model.by.f1_acc( models, getIndex  = getIndex ) )
 }
 
 evaluate.models <- function( models, data.test ){
@@ -86,16 +91,14 @@ deploy.by.window <- function( allData, asig, time.start, time.end, filterPart = 
   
   for ( i in sm ){ 
     if ( i == 0 ) {
-      write("================= OUT =====================", stdout())
-      write( asig , stdout() )
       return(NULL)
     }
   }
   
   models <- list()
-  models[[1]] <- list( train.glm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Logistic Regression", timeWindow = c(time.start, time.end), stringsAsFactors = FALSE ) )
-  models[[2]] <- list( train.svm(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Support Vector Machine", timeWindow = c(time.start, time.end), stringsAsFactors = FALSE ) )
-  models[[3]] <- list( train.nn(data.part$train), data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Neural Networks", timeWindow = c(time.start, time.end), stringsAsFactors = FALSE ) )
+  models[[1]] <- list( model = train.glm(data.part$train), data = data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Logistic Regression", timeWindowStart = time.start, timeWindowEnd = time.end, bestIndex = -1, stringsAsFactors = FALSE ) )
+  models[[2]] <- list( model = train.svm(data.part$train), data = data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Support Vector Machine", timeWindowStart = time.start, timeWindowEnd = time.end, bestIndex = -1, stringsAsFactors = FALSE ) )
+  models[[3]] <- list( model = train.nn(data.part$train), data = data.frame( Asignature = asig, Acc = 0, F1 = 0, Type = "Neural Networks", timeWindowStart = time.start, timeWindowEnd = time.end, bestIndex = -1, stringsAsFactors = FALSE ) )
   
   models <- evaluate.models( models, data.part$test )
   return( model.selection.best(models) )
@@ -119,7 +122,6 @@ deploy.classification <- function(allData, asignature, years.ini){
     names(models.comp)[list.year] <- year
     list.year <- list.year+1
   }
-  write("CLACULATE BEST MODELS", stdout())
   return( model.selection.best(models.comp) )
   
 }
@@ -132,8 +134,8 @@ deploy.classification <- function(allData, asignature, years.ini){
 
 getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
   
-  models <- list()
-  list.model <- 1; current.time.final <- final.time
+  models <- list(); allmodels <- list();
+  list.model <- 1; current.time.final <- final.time; allDataTrain <<- list(); allDataTrainNotPart <<- list(); test.models <<- list(); allIndex <<- 1
   while ( current.time.final > init.time ){
     
     models.by.window <- list()
@@ -143,19 +145,32 @@ getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
       
       write( paste( "TIME LAPSE: ", toString(current.time.init), toString(current.time.final) ), stdout() )
       asig.model <- deploy.by.window(allData, asig, current.time.init, current.time.final, filterPart = function( data.trans ){
-        data.train <- data.trans[ -grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
+        data.train <- data.trans[ !grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
         data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ), ] # TEST DATA
         return(list(train = na.omit(data.train), test = na.omit(data.test)))
       })
-      
+      current.time.init <- current.time.init - 1
+      write("Start", stdout())
+      if ( is.null(asig.model) ){next()}
+      write("End", stdout())
       models.by.window[[list.model.window]] <- asig.model
       list.model.window <- list.model.window + 1
-      current.time.init <- current.time.init - 1
     }
-    models[[list.model]] <- model.selection.best(models.by.window)
-    list.model <- list.model + 1
+    window.model <- model.selection.best(models.by.window, getIndex  = TRUE)
     current.time.final <- current.time.final - 1
+    if ( is.null(window.model)  ) {next()}
+    models[[list.model]] <- window.model
+    models.by.window[[ models[[list.model]]$data$bestIndex ]]$data$bestIndex <- models[[list.model]]$data$bestIndex;
+    classif_utils.plotMetricsOfModelsTablePDF(models.by.window, paste(asig, "/", (current.time.final+1), sep = "" ))
+    allmodels <- c(allmodels, models.by.window)
+    list.model <- list.model + 1
   }
+  
+  classif_utils.plotMetricsOfModelsTablePDF(allmodels, paste(asig, "/", sep = "" ), name = "/allModelsLambdas.pdf")
+  classif_utils.plotMetricsOfModelsTablePDF(models, paste(asig, "/", sep = "" ))
+  
+  test.models <<- allmodels
+  
   return( models )
 }
 
@@ -184,7 +199,7 @@ getBestDeltaTime <- function(){
      for ( model in model.asig ){
        classif_utils.save.model( model, 
             paste( getClassificationModelsDeltaDir(), "/", asig, "/BestModelByWindowTime_", asig, "_", sep = "" ), 
-            paste( toString(model[[2]]$timeWindow[1]), "-", toString(model[[2]]$timeWindow[2]), sep = "" ) )
+            paste( toString(model$data$timeWindowStart), "-", toString(model$data$timeWindowEnd), sep = "" ) )
      }
      list.model <- list.model + 1
   }
@@ -238,6 +253,9 @@ isis.models <- function(){
 # ============================== ISIS CLASSIFICATION MODELS EVALUATE ====================================
 # =======================================================================================================
 
+cancel.benefit <- function(final.note){
+  return(which(final.note == "failed"))
+}
 loose.nocancel.benefit <- function(final.note){
   return(which(final.note == "failed"))
 }
@@ -257,11 +275,10 @@ model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
     model.name.f <- gsub("BestModelByWindowTime_","",model.name)
     model.asignature <- gsub("_.*","",model.name.f)
     model.years <- gsub(".*_","",model.name.f)
-    model.years.start <- strtoi(gsub("-.*","",model.years))
     model.years.end <- strtoi(gsub(".*-","",model.years))
     
     appears.asig <- grep(model.asignature,data$Codigo.Asignatura) # DATA SAMPLES TO PRED BY ASIG
-    appears.year <- grep(toString(model.years.end),data$Periodo.Academico) # DATA SAMPLES TO PRED BY NEXT YEAR
+    appears.year <- grep(toString(model.years.end+1),data$Periodo.Academico) # DATA SAMPLES TO PRED BY NEXT YEAR
     appears.asig.year <- intersect(appears.asig,appears.year) # BY ASIG & NEXT YEAR
     
     if (length(appears.asig.year) > 0) {
@@ -288,14 +305,17 @@ isis.benefit.general <- function(){
   # DATA ADQUIRE
   allData <- read.csv(NOTES, header = TRUE)
   
+  test.data <<- list()
+  allIndex <<- 1
+  
   # BEST CLASSIFICATION MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)[1:2]
   asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
   asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
    
-  data.filtered <- classif_utils.data.adq(allData, asig.sistemas)
+  data.filtered <- classif_utils.data.adq(allData, asig.sistemas, removeCancel = FALSE)
   
   data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
   data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
@@ -309,6 +329,9 @@ isis.benefit.general <- function(){
   data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
   
   # GET BENEFITS BY MODELS
+  results.cancel <- model.benefit(data.cancel,"Sin Analizar",
+                                "Sugiere Continuar","Sugiere Cancelar",cancel.benefit) # PASS & NO CANCEL RESULTS
+  
   results.loose <- model.benefit(data.loose,"Sin Analizar",
                                  "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
   
@@ -318,7 +341,7 @@ isis.benefit.general <- function(){
   # PLOTS
   files <- c(paste(PLOTS_DIR_REG,"total_benefit.html",sep = ""),
              paste(PLOTS_DIR_REG,"total_benefit_unanalyzed.html",sep = ""))
-  classif_utils.plot.sunburst.tool(data.cancel,results.loose,results.pass,files)
+  classif_utils.plot.sunburst.tool(results.cancel,results.loose,results.pass,files)
 }
 
 isis.benefit.asig <- function(){
@@ -327,7 +350,7 @@ isis.benefit.asig <- function(){
   allData <- read.csv(NOTES, header = TRUE)
   
   # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)[1:2]
   asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
