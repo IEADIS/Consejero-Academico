@@ -1,10 +1,14 @@
 # exclude everything from results
 Data/*
+Analisis/Plots/Models/Classification/*
+Analisis/Plots/Models/Regression/*
 Servicio/DataAnalytics/.idea
 .Rhistory
 
 # exception to the rule
 !Data/.gitkeep
+!Analisis/Plots/Models/Classification/.gitkeep
+!Analisis/Plots/Models/Regression/.gitkeep
 
 # ignore all logs
 *.log
