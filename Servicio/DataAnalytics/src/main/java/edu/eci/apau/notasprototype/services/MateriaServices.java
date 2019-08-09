@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
  * @author Esteban
  */
 @Service
-public class MateriaServices {
+public class MateriaServices implements Services{
     
     @Autowired
     MateriasRepository materiasRepository;
@@ -26,11 +26,19 @@ public class MateriaServices {
     @Autowired
     EstimatesRepository estimatesRepository;
     
+    @Override
     public List<String> getCurrentMaterias(){
         return materiasRepository.loadAllMaterias();
     }
     
+    @Override
     public Estimate getEstimate(Materia materia){
         return estimatesRepository.loadEstimate(materia.getNombre(), materia.getNota1(), materia.getNota2());
     }
+    
+    @Override
+    public boolean classifyStudent( Materia materia ){
+        return true;
+    }
+    
 }

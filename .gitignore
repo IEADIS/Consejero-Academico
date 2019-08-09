@@ -12,3 +12,4 @@ Servicio/DataAnalytics/.idea
 
 # ignore all logs
 *.log
+/Servicio/DataAnalytics/target/

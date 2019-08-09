@@ -48,6 +48,15 @@ public class NotasAPIController {
         }
     }
     
+    @RequestMapping(path = "/classifyStudent", method = RequestMethod.POST)
+    public ResponseEntity<?> getClassificationCancelSubject(@RequestBody Materia materia){
+        try {
+            return new ResponseEntity<>(materiaServices.classifyStudent(materia), HttpStatus.ACCEPTED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getLocalizedMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+    
     @RequestMapping(path = "/estimate", method = RequestMethod.POST)
     public ResponseEntity<?> makeEstimateAsignature(@RequestBody Materia materia){
         try {
