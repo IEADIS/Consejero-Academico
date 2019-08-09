@@ -65,6 +65,8 @@ model.selection.best <- function( models, getIndex  = FALSE ){
 evaluate.models <- function( models, data.test ){
   
   for ( i in 1:length(models) ){
+    test.model <<- models[[i]]$model
+    test.data.test <<- data.test
     cm <- confusionMatrix( predict( models[[i]][[1]], data.test ), data.test$Grade3 )
     models[[i]][[2]]["F1"] <- cm$byClass["F1"]
     models[[i]][[2]]["Acc"] <- cm$overall["Accuracy"]
@@ -87,6 +89,8 @@ deploy.by.window <- function( allData, asig, time.start, time.end, filterPart = 
   
   data.part <- filter.data(allData, asig, time.start, time.end, filterPart = filterPart )
   
+  if ( nrow( classif_utils.asig.adq(allData, asig, time.end, time.end ) ) == 0 ) return(NULL);
+  
   sm <- summary( data.part$train$Grade3 )
   
   for ( i in sm ){ 
@@ -106,7 +110,7 @@ deploy.by.window <- function( allData, asig, time.start, time.end, filterPart = 
 }
 
 deploy.classification <- function(allData, asignature, years.ini){
-  
+    
   models.comp <- list()
  
   if (nrow(allData[allData$Codigo.Asignatura %in% asignature,]) < 10) {
@@ -135,7 +139,7 @@ deploy.classification <- function(allData, asignature, years.ini){
 getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
   
   models <- list(); allmodels <- list();
-  list.model <- 1; current.time.final <- final.time; allDataTrain <<- list(); allDataTrainNotPart <<- list(); test.models <<- list(); allIndex <<- 1
+  list.model <- 1; current.time.final <- final.time;
   while ( current.time.final > init.time ){
     
     models.by.window <- list()
@@ -143,33 +147,34 @@ getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
     
     while ( current.time.init >= init.time ){
       
-      write( paste( "TIME LAPSE: ", toString(current.time.init), toString(current.time.final) ), stdout() )
+      write( paste( "TIME LAPSE: ", toString(current.time.init), toString(current.time.final), "ASIG: ", asig ), stdout() )
       asig.model <- deploy.by.window(allData, asig, current.time.init, current.time.final, filterPart = function( data.trans ){
         data.train <- data.trans[ !grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
         data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ), ] # TEST DATA
         return(list(train = na.omit(data.train), test = na.omit(data.test)))
       })
       current.time.init <- current.time.init - 1
-      write("Start", stdout())
       if ( is.null(asig.model) ){next()}
-      write("End", stdout())
       models.by.window[[list.model.window]] <- asig.model
       list.model.window <- list.model.window + 1
     }
     window.model <- model.selection.best(models.by.window, getIndex  = TRUE)
     current.time.final <- current.time.final - 1
-    if ( is.null(window.model)  ) {next()}
+    
+    if ( is.null(window.model) ) {next()}
     models[[list.model]] <- window.model
+    
     models.by.window[[ models[[list.model]]$data$bestIndex ]]$data$bestIndex <- models[[list.model]]$data$bestIndex;
+    write( (current.time.final+1), stdout() )
+    
     classif_utils.plotMetricsOfModelsTablePDF(models.by.window, paste(asig, "/", (current.time.final+1), sep = "" ))
+    
     allmodels <- c(allmodels, models.by.window)
     list.model <- list.model + 1
   }
   
-  classif_utils.plotMetricsOfModelsTablePDF(allmodels, paste(asig, "/", sep = "" ), name = "/allModelsLambdas.pdf")
-  classif_utils.plotMetricsOfModelsTablePDF(models, paste(asig, "/", sep = "" ))
-  
-  test.models <<- allmodels
+  if ( length(allmodels) != 0 ) classif_utils.plotMetricsOfModelsTablePDF(allmodels, paste(asig, sep = "" ), name = "/allModelsLambdas.pdf");
+  if ( length(models) != 0 ) classif_utils.plotMetricsOfModelsTablePDF(models, paste(asig, sep = "" ), name = "LambdaSelection.pdf")
   
   return( models )
 }
@@ -185,6 +190,7 @@ getBestDeltaTime <- function(){
   
   # GET RELEVANT ASIGNATURES
   asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  asig.sistemas <- asig.sistemas[ 24:length(asig.sistemas) ]
   
   models <- list()
   list.model <- 1
@@ -305,11 +311,8 @@ isis.benefit.general <- function(){
   # DATA ADQUIRE
   allData <- read.csv(NOTES, header = TRUE)
   
-  test.data <<- list()
-  allIndex <<- 1
-  
   # BEST CLASSIFICATION MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)[1:2]
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
   asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
@@ -350,7 +353,7 @@ isis.benefit.asig <- function(){
   allData <- read.csv(NOTES, header = TRUE)
   
   # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)[1:2]
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
   asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)

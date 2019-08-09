@@ -134,7 +134,6 @@ classif_utils.plotMetricsOfModelsTableByModel <- function(models, ext = ".png"){
 classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "LambdaSelection.pdf"){
   
   dir <-PLOTS_DIR_REG
-  test <<- models
   data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
     return( c(data$data,  
               "Lambda" = (data$data$timeWindowEnd - data$data$timeWindowStart + 1) )
@@ -144,6 +143,7 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   
   row.fill <- c()
+  write("================IN==============", stdout())
   for (row in 1:length(models)) {
     if (is.null(models[[row]]) ) {next()}
     if ( models[[row]]$data$bestIndex != -1 ) {
@@ -152,7 +152,7 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
       row.fill <- c(row.fill,'white')
     }
   }
-  
+  write("================OUT==============", stdout())
   p <- plot_ly(
     type = 'table',
     header = list(
@@ -179,6 +179,9 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
       align = c('left', 'center'),
       font = list(color = c('#506784'), size = 12)
     ))
+  classif_utils.createClassDir( paste(dir, gsub("\\s", "",df$Asignature[1]), "/", sep = "" ) )
+  classif_utils.createClassDir( paste(dir, gsub("\\s", "",asig), "/", sep = "" ) )
+  write( paste(dir, gsub("\\s", "",asig), "/", sep = "" ), stdout() )
   orca(p, paste(dir, gsub("\\s", "",asig), "/" , name,sep = ""))
 }
 
@@ -188,9 +191,12 @@ classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable"
   
   data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
     return( c(data$data,  
-              "Lambda" = (data$data$timeWindowEnd - data$data$timeWindowStart) )
+              "Lambda" = (data$data$timeWindowEnd - data$data$timeWindowStart + 1) )
     ) 
   } ), strinsAsFactors = F )
+  
+  classif_utils.createClassDir(dir)
+  
   png( paste(dir, ext, sep = ""), height = 30*nrow(data.table.metrics), width = 200*ncol(data.table.metrics))
   df <- lapply(data.table.metrics, unlist)
   df <- as.data.frame(df, stringsAsFactors = FALSE)
@@ -199,11 +205,61 @@ classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable"
   
 }
 
+# PLOT A BAR WITH ALL LAMBDAS
+classif_utils.plotLambdas <- function( models, name = "AllLambdasGeneral", ext = ".png", dir_stats = PLOTS_SOURCE_DIR_STATS ){
+  
+  dir <- paste( PLOTS_DIR_REG, dir_stats, name, sep = "" )
+  
+  data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
+    return( c(data$data,  
+              "Lambda" = (data$data$timeWindowEnd - data$data$timeWindowStart + 1) )
+    ) 
+  } ), strinsAsFactors = F )
+  df <- lapply(data.table.metrics, unlist)
+  df <- as.data.frame(df, stringsAsFactors = FALSE)
+  
+  labels <- c()
+  for ( lambda in levels( factor( df$Lambda ) ) ){
+    labels <- c(labels, paste( "Lambda", lambda ) )
+  }
+  
+  p <<- plot_ly( x = labels, 
+           y = summary(factor(df$Lambda)), 
+           type = "bar",
+           name = "Lambdas General")
+  
+  orca(p, file = paste(dir, ext, sep = ""))
+  htmlwidgets::saveWidget(as_widget(p), 
+                          file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
+                                    basename( paste(dir, ".html", sep = "") )))  
+  
+}
+
+# PLOT A BAR WITH ALL LAMBDAS
+classif_utils.plotLambdasByAsig <- function( models, name = "AllLambdas", ext = ".png", dir_stats = PLOTS_SOURCE_DIR_STATS ){
+  
+  for ( asig in names(models) ){
+    if ( length(models[[asig]]) == 0 ) {next()}
+    classif_utils.plotLambdas( models[[asig]], name = name, dir_stats = paste( gsub("\\s", "",asig), "/", PLOTS_SOURCE_DIR_STATS, sep = "") )
+  }
+}
+
+# PLOT A PIE WITH EACH TIPE OF ALGORITHM TRAINED BY ASIGNATURE
+classif_utils.plotNumberOfModelsByTypeByAsig <- function( models, name = "TrainedAlgorithmsWindowPart", ext = ".png", dir_stats = PLOTS_SOURCE_DIR_STATS ){
+  
+  for ( asig in names(models) ){
+    if ( length(models[[asig]]) == 0 ) {next()}
+    classif_utils.plotNumberOfModelsByType( models[[asig]], dir_stats = paste( gsub("\\s", "",asig), "/", PLOTS_SOURCE_DIR_STATS, sep = "") )
+  }
+  
+}
+
+# PLOT A PIE WITH EACH TIPE OF ALGORITHM TRAINED
 classif_utils.plotNumberOfModelsByType <- function( models, name = "TrainedAlgorithmsWindowPart", ext = ".png", dir_stats = PLOTS_SOURCE_DIR_STATS ){
-  types <- summary( factor(laply(models, function(data){ return( data[[2]]$Type ) } ) ) )
-  test <<- models
+  types <- summary( factor( plyr::laply(models, function(data){ return( data$data$Type ) } ) ) )
   data <- data.frame( "Categorie" = names(types), "vals" = types )
   
+  classif_utils.createClassDir( paste( PLOTS_DIR_REG, dir_stats, sep = "" ) )
   dir <- paste( PLOTS_DIR_REG, dir_stats, name, sep = "" )
   
   p <- plot_ly(data, labels = ~Categorie, values = ~vals, type = 'pie') %>%
@@ -303,5 +359,20 @@ classif_utils.plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,fi
   
   htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(files_path[1])),basename(files_path[1])))
   htmlwidgets::saveWidget(as_widget(p.unanalyzed), file.path(normalizePath(dirname(files_path[2])),basename(files_path[2])))
+}
+
+plotAll <- function(){
+  
+  models <- classif_utils.load.models( paste( CLASS_MODELS, CLASS_MODELS_DELTA, sep = "" ) )
+  
+  isis.benefit.general()
+  isis.benefit.asig()
+  
+  classif_utils.plotNumberOfModelsByType( classif_utils.loaded.models.list(models) )
+  classif_utils.plotNumberOfModelsByTypeByAsig( models )
+  
+  classif_utils.plotLambdas( classif_utils.loaded.models.list(models) )
+  classif_utils.plotLambdasByAsig( models )
+  
 }
 

@@ -253,7 +253,7 @@ isis.benefit.general <- function(){
   # PLOTS
   files <- c(paste(PLOTS_DIR_REG,"total_benefit.html",sep = ""),
              paste(PLOTS_DIR_REG,"total_benefit_unanalyzed.html",sep = ""),
-             paste(PLOTS_DIR_REG,"conf_results.pdf",sep = ""))
+               paste(PLOTS_DIR_REG,"conf_results.pdf",sep = ""))
   plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asig.sistemas,"Regresion")
 }
 
