@@ -338,7 +338,7 @@ isis.models <- function(){
   # DATA ADQUIRE
   allData <- read.csv(NOTES, header = TRUE)
   # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)[1:2]
+  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
   asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
@@ -363,8 +363,8 @@ isis.models <- function(){
       list.lambda <- 1
       
       for (year.diff in year.time.lambdas) { # BY TIME WINDOW / YEAR LAMBDA
-        asig.model <- deploy.lm(asignature,toString(year.pred-year.diff),toString(year.pred-1))  
-        if (is.null(asig.model)) {next()} # CANT CREATE THE MODEL
+        asig.model <- deploy.lm(asignature,toString(year.pred-year.diff),toString(year.pred-1))
+        if (is.null(asig.model) | length(asig.model$Model) == 0) {next()} # CANT CREATE THE MODEL
         if (any(is.na(asig.model$Model$results))) {next()} # THE MODEL CONTAINS NAs RESAMPLES, NO SENSE MODEL
         models.comp <- rbind(models.comp, asig.model$Data)
         models.data[[list.asig]][[list.year.pred]][[list.lambda]] <- asig.model$Model
@@ -374,9 +374,13 @@ isis.models <- function(){
       names(models.data[[list.asig]])[list.year.pred] <- year.pred
       list.year.pred <- list.year.pred+1
     }
+    models.data[[list.asig]] <- Filter(length,models.data[[list.asig]])
     names(models.data)[list.asig] <- asignature
     list.asig <- list.asig+1
   }
+  
+  m.results <<- models.comp
+  m.data <<- models.data
   
   # BEST MODEL SELECTION
   
