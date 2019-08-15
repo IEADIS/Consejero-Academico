@@ -1,7 +1,20 @@
 library(rgl)
 library(magick)
 library(plotly)
-PLOTS_SOURCE <- "Analisis/Plots"
+
+NOTES = "Data/notas_clean.csv"
+LM_MODELS = "Data/Models/Regression/"
+CL_MODELS = "Data/Models/Classification/"
+ABS_MODELS = "Data/Models/Absolute/"
+
+PLOTS_DIR = "Analisis/Plots/"
+PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Regression/",sep = "")
+PLOTS_DIR_CLA <- paste(PLOTS_DIR,"Models/Classification/",sep = "")
+PLOTS_DIR_ABS <- paste(PLOTS_DIR,"Models/Absolute/",sep = "")
+
+CLASS_MODELS = "Data/Models/Classification/"
+CLASS_MODELS_DELTA = "/Models_Best_Delta"
+
 
 # =======================================================================================================
 # =================================== 3D VISUALIZATION ==================================================

@@ -5,11 +5,6 @@ library(scatterplot3d)
 source("Analisis/R_Scripts/utils.R")
 #devtools::install_github("laresbernardo/lares")
 
-NOTES = "Data/notas_clean.csv"
-LM_MODELS = "Data/Modelos/Regresion/Lineal/"
-PLOTS_DIR = "Analisis/Plots/"
-PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Regression/",sep = "")
-
 
 # =======================================================================================================
 # ====================================== GRADES ADQUIS ==================================================
@@ -147,6 +142,7 @@ plots.lm <- function(lambda.results,models,asig,year.pred,selected.lambda){
   
   asig <- gsub("\\s", "",asig)
   dir <- paste(PLOTS_DIR_REG,asig,"/",year.pred,"/",sep = "")
+  print(dir)
   dir.create(dir)
   
   # LAMBDA TABLE RESULTS
@@ -279,6 +275,7 @@ plot.lambdas <- function(lambdas.results,dir,selected.lambda){
       align = c('left', 'center'),
       font = list(color = c('#506784'), size = 12)
     ))
+  print(paste(dir,"Lambda_Selection.pdf",sep = ""))
   export(p, paste(dir,"Lambda_Selection.pdf",sep = ""))
 }
 
@@ -295,6 +292,7 @@ plot.occ.lambdas <- function(lambdas.results,dir){
 # =======================================================================================================
 
 save.model.lm <- function(model,model.name){
+  print(paste(LM_MODELS,"lm-",model.name,".rds",sep = ""))
   save.model(model, file.name.path = paste(LM_MODELS,"lm-",model.name,".rds",sep = ""))
 }
 
@@ -334,16 +332,17 @@ deploy.lm <- function(asig,time.start,time.end){
 # ========================================= ISIS MODELS =================================================
 # =======================================================================================================
 
-isis.models <- function(){
+regress.bestModel.train <- function(allData, asignatures, omitted.years = c()){
   # DATA ADQUIRE
-  allData <- read.csv(NOTES, header = TRUE)
+  # allData <- read.csv(NOTES, header = TRUE)
   # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
-  asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
-  asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
-  asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
-  asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
+  # asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  # asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
+  # asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
+  # asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
+  # asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
   
+  asig.sistemas <- asignatures
   
   # ASIG SISTEMAS
   models.comp <- data.frame(Asignature = c(), TimeWindow = c(), TimePred = c(), RMSE = c(), Rsquared = c())
@@ -354,10 +353,11 @@ isis.models <- function(){
     # GET ALL YEARS
     years <- unique(sub("-.*","",droplevels(allData[allData$Codigo.Asignatura %in% asignature,]$Periodo.Academico))) # ALL YEARS
     years.num <- strtoi(years) # INT VALUES OF YEARS
+    years.num <- c(years.num,max(years.num)+1) # ADD THE NEW YEAR TO PRED
     list.year.pred <- 1
     
     for (year.pred in years.num) { # BY YEAR TO PREDICT
-      if ( (year.pred - min(years.num)) < 2 ) { next() }# IF THE MIN DIFF IS LESS THAN 2, CANT BE TRAIN
+      if ( (year.pred - min(years.num)) < 2 | (year.pred %in% strtoi(omitted.years)) ) { next() }# IF THE MIN DIFF IS LESS THAN 2, CANT BE TRAIN
       year.time.lambdas <- 2:(year.pred - min(years.num))
       models.data[[list.asig]][[list.year.pred]] <- list()
       list.lambda <- 1

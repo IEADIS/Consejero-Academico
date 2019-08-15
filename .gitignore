@@ -2,6 +2,7 @@
 Data/*
 Analisis/Plots/Models/Classification/*
 Analisis/Plots/Models/Regression/*
+Analisis/Plots/Models/Absolute/*
 Servicio/DataAnalytics/.idea
 .Rhistory
 
@@ -9,6 +10,7 @@ Servicio/DataAnalytics/.idea
 !Data/.gitkeep
 !Analisis/Plots/Models/Classification/.gitkeep
 !Analisis/Plots/Models/Regression/.gitkeep
+!Analisis/Plots/Models/Absolute/.gitkeep
 
 # ignore all logs
 *.log

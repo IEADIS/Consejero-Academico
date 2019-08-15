@@ -49,8 +49,8 @@ classif_utils.data.adq <- function(data, asig, removeCancel = TRUE){
 # TRANSFORMATION OF THE DATA TO A FORMAT ACCEPTED BY THE MODELS TO TRAIN
 classif_utils.asig.trans <- function(data){
   data.trans <- data.frame( Asig = data$Codigo.Asignatura, Grade1 = data$nota1, Grade2 = data$nota2, 
-                            Grade3 = factor(+(data$Nota.Final >= 30)), Periodo = data$Periodo.Academico ) # VARIABLES SELECTION
-  levels(data.trans$Grade3) <- c("0" = "failed", "1" = "approved")
+                            Grade3 = factor(+(data$Nota.Final < 30)), Periodo = data$Periodo.Academico ) # VARIABLES SELECTION
+  levels(data.trans$Grade3) <- c("approved","failed")
   return(data.trans)
 }
 
@@ -60,7 +60,7 @@ classif_utils.asig.part <- function(data.trans){
   data.trans <- data.trans[sample(m), ] # RANDOM SAMPLES
   data.train <- data.trans[1:round(m*0.7),] # TRAINING DATA - 70%
   data.test <- data.trans[round(m*0.7)+1:round(m*0.3),] # TEST DATA - 30%
-  return(list(train = na.omit(data.train[sample(nrow(data.train)),]), test = na.omit(data.testsample(nrow(data.test)),)))
+  return(list(train = na.omit(data.train[sample(nrow(data.train)),]), test = na.omit(data.testsample(nrow(data.test)))))
 }
 
 
@@ -74,6 +74,7 @@ classif_utils.createClassDir <- function(path){
 
 classif_utils.save.model <- function(model, model.type, model.name){
   MODELS <- getClassificationModelsDir()
+  print(paste(MODELS, model.type, model.name, ".rds", sep = ""))
   saveRDS(model, file = paste(MODELS, model.type, model.name, ".rds", sep = ""))
 }
 
@@ -115,7 +116,7 @@ classif_utils.getMetricsBinomial <- function( pred, class ){
 
 classif_utils.plotMetricsOfModelsTableByModel <- function(models, ext = ".png"){
   
-  dir <-PLOTS_DIR_REG
+  dir <-PLOTS_DIR_CLA
   
   for ( name in names(models) ){
     
@@ -133,7 +134,7 @@ classif_utils.plotMetricsOfModelsTableByModel <- function(models, ext = ".png"){
 
 classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "LambdaSelection.pdf"){
   
-  dir <-PLOTS_DIR_REG
+  dir <-PLOTS_DIR_CLA
   data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
     return( c(data$data,  
               "Lambda" = (data$data$timeWindowEnd - data$data$timeWindowStart + 1) )
@@ -182,12 +183,12 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
   classif_utils.createClassDir( paste(dir, gsub("\\s", "",df$Asignature[1]), "/", sep = "" ) )
   classif_utils.createClassDir( paste(dir, gsub("\\s", "",asig), "/", sep = "" ) )
   write( paste(dir, gsub("\\s", "",asig), "/", sep = "" ), stdout() )
-  orca(p, paste(dir, gsub("\\s", "",asig), "/" , name,sep = ""))
+  export(p, paste(dir, gsub("\\s", "",asig), "/" , name,sep = ""))
 }
 
 classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable", ext = ".png" ){
   
-  dir <- paste( PLOTS_DIR_REG, PLOTS_SOURCE_DIR_STATS, name, sep = "" )
+  dir <- paste( PLOTS_DIR_CLA, PLOTS_SOURCE_DIR_STATS, name, sep = "" )
   
   data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
     return( c(data$data,  
@@ -208,7 +209,7 @@ classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable"
 # PLOT A BAR WITH ALL LAMBDAS
 classif_utils.plotLambdas <- function( models, name = "AllLambdasGeneral", ext = ".png", dir_stats = PLOTS_SOURCE_DIR_STATS ){
   
-  dir <- paste( PLOTS_DIR_REG, dir_stats, name, sep = "" )
+  dir <- paste( PLOTS_DIR_CLA, dir_stats, name, sep = "" )
   
   data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
     return( c(data$data,  
@@ -228,7 +229,7 @@ classif_utils.plotLambdas <- function( models, name = "AllLambdasGeneral", ext =
            type = "bar",
            name = "Lambdas General")
   
-  orca(p, file = paste(dir, ext, sep = ""))
+  export(p, file = paste(dir, ext, sep = ""))
   htmlwidgets::saveWidget(as_widget(p), 
                           file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
                                     basename( paste(dir, ".html", sep = "") )))  
@@ -259,14 +260,14 @@ classif_utils.plotNumberOfModelsByType <- function( models, name = "TrainedAlgor
   types <- summary( factor( plyr::laply(models, function(data){ return( data$data$Type ) } ) ) )
   data <- data.frame( "Categorie" = names(types), "vals" = types )
   
-  classif_utils.createClassDir( paste( PLOTS_DIR_REG, dir_stats, sep = "" ) )
-  dir <- paste( PLOTS_DIR_REG, dir_stats, name, sep = "" )
+  classif_utils.createClassDir( paste( PLOTS_DIR_CLA, dir_stats, sep = "" ) )
+  dir <- paste( PLOTS_DIR_CLA, dir_stats, name, sep = "" )
   
   p <- plot_ly(data, labels = ~Categorie, values = ~vals, type = 'pie') %>%
     layout(title = 'Porcentaje de Algoritmos entrenados',
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-  orca(p, file = paste(dir, ext, sep = ""))
+  export(p, file = paste(dir, ext, sep = ""))
   htmlwidgets::saveWidget(as_widget(p), 
           file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
                     basename( paste(dir, ".html", sep = "") )))

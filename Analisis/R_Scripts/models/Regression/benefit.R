@@ -9,7 +9,7 @@ source("Analisis/R_Scripts/models/Regression/regression.R")
 # =======================================================================================================
 
 # DATA ADQUISITION FILTER
-data.adq <- function(data, asig){
+regress.data.adq <- function(data, asig){
   data.asig <- data[ data$Codigo.Asignatura %in% asig, ] # ASIGNATURE
   data.asig <- data.asig[ data.asig$Periodo.Academico != "2013-i", ] # WEIRD DATA
   data.asig <- data.asig[ data.asig$Nota.Final <= 50 & data.asig$Estado.Asignatura != "Retiro", ] # NO ACCOMP
@@ -24,7 +24,7 @@ data.adq <- function(data, asig){
 # =======================================================================================================
 
 # MODEL BENEFIT
-model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
+regress.model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
   # GET ALL MODELS
   models <- load.models(LM_MODELS)
   data.results <- data.frame(data, Estado.Modelo = rep(unanalyzed,nrow(data)),
@@ -67,13 +67,13 @@ model.benefit <- function(data, unanalyzed, wrong, right, condition.func){
   return(data.results)
 }
 
-loose.nocancel.benefit <- function(final.note){
+regress.loose.nocancel.benefit <- function(final.note){
   return(which(final.note < 30))
 }
-pass.nocancel.benefit <- function(final.note){
+regress.pass.nocancel.benefit <- function(final.note){
   return(which(final.note >= 30))
 }
-cancel.benefit <- function(final.note){
+regress.cancel.benefit <- function(final.note){
   return(which(final.note < 30))
 }
 
@@ -82,7 +82,7 @@ cancel.benefit <- function(final.note){
 # =======================================================================================================
 
 # PLOT BENEFIT
-plot.benefit <- function(results,file_path){
+regress.plot.benefit <- function(results,file_path){
   results$App <- rep(1,nrow(results))
   p <- plot_ly(results, labels = ~Estado.Modelo, values = ~App, type = 'pie') %>%
     layout(title = 'Uso de la Herramienta por Estudiante',
@@ -91,7 +91,7 @@ plot.benefit <- function(results,file_path){
   export(p, file_path)
 }
 
-plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,files_path,asignatures,method){
+regress.plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,files_path,asignatures,method){
   name.asig <- asignatures
   if (length(asignatures) > 1) {
     name.asig <- "General"
@@ -219,56 +219,56 @@ plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,files_path,asign
 # ======================================= ISIS BENEFIT ==================================================
 # =======================================================================================================
 
-isis.benefit.general <- function(){
+regress.bestModel.benefit.general <- function(allData, asignatures){
   # DATA ADQUIRE
-  allData <- read.csv(NOTES, header = TRUE)
+  # allData <- read.csv(NOTES, header = TRUE)
   # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  # asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
   # asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
   # asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
   # asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
   # asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
   
-  data.filtered <- data.adq(allData, asig.sistemas)
-  data.cancel <<- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
+  data.filtered <- regress.data.adq(allData, asignatures)
+  data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
   data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
   data.loose <- data.nocancel[ data.nocancel$Nota.Final < 30 & data.nocancel$Nota.Final != 0, ] # NO CANCEL & LOOSE
   data.pass <- data.nocancel[ data.nocancel$Nota.Final >= 30 & data.nocancel$Nota.Final <= 50, ] # NO CANCEL & PASS
   
   # DROPLEVELS
-  data.cancel <<- droplevels(data.cancel) # CLEAN UNUSED FACTORS
+  data.cancel <- droplevels(data.cancel) # CLEAN UNUSED FACTORS
   data.loose <- droplevels(data.loose) # CLEAN UNUSED FACTORS
   data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
   
   # GET BENEFITS BY MODELS
-  results.cancel <<- model.benefit(data.cancel,"Sin Analizar",
-                                  "Sugiere Continuar","Sugiere Cancelar",cancel.benefit)
+  results.cancel <- regress.model.benefit(data.cancel,"Sin Analizar",
+                                  "Sugiere Continuar","Sugiere Cancelar",regress.cancel.benefit)
   
-  results.loose <- model.benefit(data.loose,"Sin Analizar",
-                                 "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
+  results.loose <- regress.model.benefit(data.loose,"Sin Analizar",
+                                 "Sugiere Continuar","Sugiere Cancelar",regress.loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
   
-  results.pass <- model.benefit(data.pass,"Sin Analizar",
-                                "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
+  results.pass <- regress.model.benefit(data.pass,"Sin Analizar",
+                                "Sugiere Cancelar","Sugiere Continuar",regress.pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
   
   # PLOTS
   files <- c(paste(PLOTS_DIR_REG,"total_benefit.html",sep = ""),
              paste(PLOTS_DIR_REG,"total_benefit_unanalyzed.html",sep = ""),
                paste(PLOTS_DIR_REG,"conf_results.pdf",sep = ""))
-  plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asig.sistemas,"Regresion")
+  regress.plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asignatures,"Regresion")
 }
 
-isis.benefit.asig <- function(){
-  # DATA ADQUIRE
-  allData <- read.csv(NOTES, header = TRUE)
-  # LINEAR MODEL ISIS
-  asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
-  asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
-  asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
-  asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
-  asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
+regress.bestModel.benefit.asig <- function(allData, asignatures){
+  # # DATA ADQUIRE
+  # allData <- read.csv(NOTES, header = TRUE)
+  # # LINEAR MODEL ISIS
+  # asig.sistemas <- unique(allData[allData$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+  # asig.sistemas.tec <- unique(allData[allData$Area.Asignatura %in% c('ELECTIVAS TECNICAS-SISTEMAS'),]$Codigo.Asignatura)
+  # asig.humanidades <- unique(allData[allData$Area.Asignatura %in% c('HUMANIDADES E IDIOMAS'),]$Codigo.Asignatura)
+  # asig.matematicas <- unique(allData[allData$Area.Asignatura %in% c('AREA DE MATEMaTICAS'),]$Codigo.Asignatura)
+  # asig.ciencias <- unique(allData[allData$Area.Asignatura %in% c('CIENCIAS NATURALES'),]$Codigo.Asignatura)
   
-  for (asig in asig.sistemas) {
-    data.filtered <- data.adq(allData, asig)
+  for (asig in asignatures) {
+    data.filtered <- regress.data.adq(allData, asig)
     data.cancel <- data.filtered[ data.filtered$Estado.Asignatura %in% "CancelaciaIn", ]
     data.nocancel <- data.filtered[ data.filtered$Estado.Asignatura != "CancelaciaIn", ] # STUDENTS WHO NO CANCELED
     data.loose <- data.nocancel[ data.nocancel$Nota.Final < 30 & data.nocancel$Nota.Final != 0, ] # NO CANCEL & LOOSE
@@ -280,14 +280,14 @@ isis.benefit.asig <- function(){
     data.pass <- droplevels(data.pass) # CLEAN UNUSED FACTORS
     
     # GET BENEFITS BY MODELS
-    results.cancel <- model.benefit(data.cancel,"Sin Analizar",
-                                    "Sugiere Continuar","Sugiere Cancelar",cancel.benefit)
+    results.cancel <- regress.model.benefit(data.cancel,"Sin Analizar",
+                                    "Sugiere Continuar","Sugiere Cancelar",regress.cancel.benefit)
     
-    results.loose <- model.benefit(data.loose,"Sin Analizar",
-                                   "Sugiere Continuar","Sugiere Cancelar",loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
+    results.loose <- regress.model.benefit(data.loose,"Sin Analizar",
+                                   "Sugiere Continuar","Sugiere Cancelar",regress.loose.nocancel.benefit) # LOOSE & NO CANCEL RESULTS
     
-    results.pass <- model.benefit(data.pass,"Sin Analizar",
-                                  "Sugiere Cancelar","Sugiere Continuar",pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
+    results.pass <- regress.model.benefit(data.pass,"Sin Analizar",
+                                  "Sugiere Cancelar","Sugiere Continuar",regress.pass.nocancel.benefit) # PASS & NO CANCEL RESULTS
     
     # PLOTS
     asig.f <- gsub("\\s", "",asig)
@@ -298,6 +298,6 @@ isis.benefit.asig <- function(){
     files <- c(paste(dir,asig.f,"_benefit.html",sep = ""),
                paste(dir,asig.f,"_benefit_unanalyzed.html",sep = ""),
                paste(dir,asig.f,"_conf_results.pdf",sep = ""))
-    plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asig,"Regresion")
+    regress.plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asig,"Regresion")
   }
 }
