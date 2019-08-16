@@ -13,6 +13,6 @@ import edu.eci.apau.notasprototype.model.Materia;
  */
 public interface RepositoryR {
     
-    public boolean classifyStudent( Materia materia ) throws PersistenceException;
+    public Materia classifyStudent( String subj, double note1, double note2 ) throws PersistenceException;
     
 }

@@ -14,7 +14,35 @@ public class Materia {
     private String nombre;
     private double nota1;
     private double nota2;
+    private boolean classification;
+    private String lastYearTrained;
 
+    public Materia() {
+    }
+
+    public Materia(String nombre, double nota1, double nota2, boolean classification) {
+        this.nombre = nombre;
+        this.nota1 = nota1;
+        this.nota2 = nota2;
+        this.classification = classification;
+    }
+
+    public Materia(String nombre, double nota1, double nota2, boolean classification, String lastYearTrained) {
+        this.nombre = nombre;
+        this.nota1 = nota1;
+        this.nota2 = nota2;
+        this.classification = classification;
+        this.lastYearTrained = lastYearTrained;
+    }
+
+    public String getLastYearTrained() {
+        return lastYearTrained;
+    }
+
+    public void setLastYearTrained(String lastYearTrained) {
+        this.lastYearTrained = lastYearTrained;
+    }
+    
     public String getNombre() {
         return nombre;
     }
@@ -38,6 +66,12 @@ public class Materia {
     public void setNota2(double nota2) {
         this.nota2 = nota2;
     }
-    
-    
+
+    public boolean isClassification() {
+        return classification;
+    }
+
+    public void setClassification(boolean classification) {
+        this.classification = classification;
+    }
 }

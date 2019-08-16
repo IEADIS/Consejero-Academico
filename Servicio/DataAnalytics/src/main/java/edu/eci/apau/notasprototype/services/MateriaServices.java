@@ -9,6 +9,8 @@ import edu.eci.apau.notasprototype.model.Estimate;
 import edu.eci.apau.notasprototype.model.Materia;
 import edu.eci.apau.notasprototype.persistence.EstimatesRepository;
 import edu.eci.apau.notasprototype.persistence.MateriasRepository;
+import edu.eci.apau.notasprototype.persistence.PersistenceException;
+import edu.eci.apau.notasprototype.persistence.RepositoryR;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,9 @@ public class MateriaServices implements Services{
     @Autowired
     EstimatesRepository estimatesRepository;
     
+    @Autowired
+    RepositoryR rRepository;
+    
     @Override
     public List<String> getCurrentMaterias(){
         return materiasRepository.loadAllMaterias();
@@ -37,8 +42,8 @@ public class MateriaServices implements Services{
     }
     
     @Override
-    public boolean classifyStudent( Materia materia ){
-        return true;
+    public Materia classifyStudent( String subj, double note1, double note2 ) throws PersistenceException{
+        return rRepository.classifyStudent(subj, note1, note2);
     }
     
 }

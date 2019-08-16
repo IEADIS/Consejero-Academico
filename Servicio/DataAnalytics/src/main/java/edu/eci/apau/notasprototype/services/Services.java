@@ -20,6 +20,6 @@ public interface Services {
     
     public Estimate getEstimate(Materia materia) throws PersistenceException;
     
-    public boolean classifyStudent( Materia materia ) throws PersistenceException;
+    public Materia classifyStudent( String subj, double note1, double note2 ) throws PersistenceException;
     
 }

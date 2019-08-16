@@ -62,7 +62,25 @@
             <artifactId>jquery</artifactId>
             <version>3.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.renjin</groupId>
+            <artifactId>renjin-script-engine</artifactId>
+            <version>RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.renjin.cran</groupId>
+            <artifactId>installr</artifactId>
+            <version>0.21.3-b1</version>
+        </dependency>
     </dependencies>
+    
+    <repositories>
+        <repository>
+          <id>bedatadriven</id>
+          <name>bedatadriven public repo</name>
+          <url>https://nexus.bedatadriven.com/content/groups/public/</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
