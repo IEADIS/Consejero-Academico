@@ -16,7 +16,7 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = {"edu.eci.apau.notasprototype"})
 public class NotasPrototypeAPI {
 
-    public static void main(String[] args) {        
+    public static void main(String[] args) {
         SpringApplication.run(NotasPrototypeAPI.class, args);
     }
     

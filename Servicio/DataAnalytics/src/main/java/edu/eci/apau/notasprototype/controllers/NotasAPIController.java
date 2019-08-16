@@ -57,6 +57,7 @@ public class NotasAPIController {
             return new ResponseEntity<>(materiaServices.classifyStudent(subj, note1, note2), 
                     HttpStatus.ACCEPTED);
         } catch (Exception e) {
+            e.printStackTrace();
             return new ResponseEntity<>(e.getLocalizedMessage(), HttpStatus.NOT_FOUND);
         }
     }

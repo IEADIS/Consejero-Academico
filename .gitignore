@@ -4,6 +4,9 @@ Analisis/Plots/Models/Classification/*
 Analisis/Plots/Models/Regression/*
 Analisis/Plots/Models/Absolute/*
 Servicio/DataAnalytics/.idea
+Servicio/DataAnalytics/src/main/java/resources/static/absolute/*
+Servicio/DataAnalytics/src/main/java/resources/static/html/absolute/*
+Servicio/DataAnalytics/src/main/resources/static/html/absolute/*
 .Rhistory
 
 # exception to the rule

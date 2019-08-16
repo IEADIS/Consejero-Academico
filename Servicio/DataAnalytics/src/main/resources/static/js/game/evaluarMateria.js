@@ -1,14 +1,13 @@
 var evaluarMateria = (function () {
     
     var updateResults = function (result) {
-        result.nota3 = Math.round(Math.abs(result.nota3) * 100) / 100;
-        result.rSquared = Math.round(result.rSquared * 10000) / 100;
         var tittle = "";
         var image = "";
-        var content = "Según el proceso de análisis, la nota que sacarías en el ultimo tercio rondaria entre el valor de " +
-                    result.nota3 + ", con una confiabilidad en la estimación del " + result.rSquared + "%";;
+        var content = "El proceso de análisis es realizado usando un modelo optimizado para el año " + result.lastYearTrained
+                 + ", de acuerdo a las notas ingresadas nuestro modelo arroja los siguente:";
+        
         var decision = "";
-        if(result.decision === 'Cancele'){
+        if( !result.classification ){
             tittle = "JUMM.. ESTA COMPLICADO";
             image = "/images/mal.png";
             decision = "Lo mejor que puedes hacer es Cancelar";
@@ -43,6 +42,12 @@ var evaluarMateria = (function () {
             '<img src="/html/img/' + src +  '" width="85%" alt="' + tittle +  '"/>'
         );
     };
+
+    var plotFromR = function (id, src, tittle){
+        $(id).html(
+            '<img src="/absolute/' + src +  '" width="85%" alt="' + tittle +  '"/>'
+        );
+    };
     
     return {
 
@@ -60,23 +65,20 @@ var evaluarMateria = (function () {
                     function (data) {
                         alert(data["responseText"]);
                     }
-
             );
         },
         
         makeEstimate : function () {
-            console.log($("#materia").val());
-            console.log($("#tercio1").val());
-            console.log($("#tercio2").val());
-            var Materia = {nombre: $("#materia").val(), nota1 : $("#tercio1").val(), nota2 : $("#tercio2").val()};
+            var Materia = { grade1 : $("#tercio1").val()*10, grade2 : $("#tercio2").val()*10};
             
             jQuery.ajax({
-                url: "/evaluate/estimate",
-                type: "POST",
-                data: JSON.stringify(Materia),
+                url: "/evaluate/classifyStudent/"+$("#materia").val(),
+                type: "GET",
+                data: jQuery.param(Materia) ,
                 dataType: "json",
                 contentType: "application/json; charset=utf-8",
                 success: function (result) {
+                    console.log(result)
                     updateResults(result);
                 }
             });
@@ -109,6 +111,13 @@ var evaluarMateria = (function () {
             } else if ($("#department").val() === "Electrica"){
                 plotImg('#plot1', "cancelVsSemsElectrica.png");
                 plot('#plot2', "Anom_notasVsSemsElectrica.html");
+            }
+        },
+        addPlotClassificationEstats : function (){
+            if ($("#department").val() === "General") {
+                plotFromR('#plot1', "total_benefit.html");
+            } else {
+                plotFromR('#plot1', $("#materia").val() + "/total_benefit.html");
             }
         }
 
