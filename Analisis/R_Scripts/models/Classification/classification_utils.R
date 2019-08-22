@@ -132,7 +132,7 @@ classif_utils.plotMetricsOfModelsTableByModel <- function(models, ext = ".png"){
   
 }
 
-classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "LambdaSelection.pdf"){
+classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "LambdaSelection.html"){
   
   dir <-PLOTS_DIR_CLA
   data.table.metrics <- as.data.frame( plyr::laply(models, function(data){ 
@@ -182,8 +182,10 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
     ))
   classif_utils.createClassDir( paste(dir, gsub("\\s", "",df$Asignature[1]), "/", sep = "" ) )
   classif_utils.createClassDir( paste(dir, gsub("\\s", "",asig), "/", sep = "" ) )
-  write( paste(dir, gsub("\\s", "",asig), "/", sep = "" ), stdout() )
-  export(p, paste(dir, gsub("\\s", "",asig), "/" , name,sep = ""))
+  write( paste(dir, gsub("\\s", "",asig), "/" , name,sep = ""), stdout() )
+  htmlwidgets::saveWidget(p, file.path(normalizePath(dirname( paste(dir, gsub("\\s", "",asig), "/" , name,sep = "") )),
+                                       basename( paste(dir, gsub("\\s", "",asig), "/" , name,sep = "") )))
+  write("================OUT2==============", stdout())
 }
 
 classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable", ext = ".png" ){

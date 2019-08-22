@@ -8,7 +8,7 @@ source("Analisis/R_Scripts/models/approach_benefit.R")
 # =====================================================================================================================
 
 data.grades <- read.csv(NOTES, header = TRUE)
-asigntatures.consider <- unique(data.grades[data.grades$Area.Asignatura %in% c('SISTEMAS'),]$Codigo.Asignatura)
+asigntatures.consider <- unique(data.grades[data.grades$Programa.Estudiante %in% c('INGENIERIA DE SISTEMAS'),]$Codigo.Asignatura)
 years.consider <- strtoi(unique(sub("-.*","",droplevels(data.grades[data.grades$Codigo.Asignatura %in% asigntatures.consider,]$Periodo.Academico))))
 years.consider <- c(years.consider[-c(1,2)],max(years.consider)+1)
 

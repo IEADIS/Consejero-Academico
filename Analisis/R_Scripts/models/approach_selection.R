@@ -3,8 +3,30 @@ library(caret)
 library(cowplot)
 source("Analisis/R_Scripts/utils.R")
 
+analy.falses <- function(data){
+  grade.real <- data$Nota.Final
+  grade.pred <- rowMeans(as.data.frame(data$nota1,data$nota2,data$nota3.Pred))
+  data.falses.ind <- which((grade.real < 30 & grade.pred >= 30) | (grade.real >= 30 & grade.pred < 30))
+  diff.falses <- abs(grade.pred[data.falses.ind]-30)
+  
+  data.falses <- data[data.falses.ind,]
+  data.falses$nota.pred.var <- diff.falses
+  data.falses <- droplevels(data.falses)
+  
+  print(paste('FALSE*S MEAN OF VARIANCE AROUND 30: ', mean(data.falses$nota.pred.var)))
+  p <- plot_ly(y = data.falses$nota.pred.var, 
+               color = data.falses$Codigo.Asignatura, type = "box",
+               colors = colorRampPalette(c("red","blue",'green'))(nrow(unique(data.falses$Codigo.Asignatura))))
+  
+  htmlwidgets::saveWidget(p, file.path(normalizePath(dirname(paste(PLOTS_DIR_ABS,"Var_Falses.html",sep = ""))),
+                                       basename(paste(PLOTS_DIR_ABS,"Var_Falses.html",sep = ""))))
+  return(data.falses)
+}
+
 model.approach.selection <- function(test.data, regress.model, classif.model, asig, year){
-  reg.f1 <- reg.approach.cof(test.data, regress.model)
+  reg.analyz <- reg.approach.cof(test.data, regress.model)
+  reg.f1 <- reg.analyz$cm
+  test.data$nota3.Pred <- reg.analyz$preds
   cla.f1 <- cla.approach.cof(test.data, classif.model)
   
   reg.mean <- mean(reg.f1$byClass['F1'], reg.f1$overall['Accuracy'])
@@ -33,24 +55,25 @@ model.approach.selection <- function(test.data, regress.model, classif.model, as
     app.results$F1 <- reg.f1$byClass["F1"]
     app.results$Acc <- reg.f1$overall['Accuracy']
     regress.model$Approach <- 'Regression'
-    return(list(Model = regress.model,Results = app.results))
+    return(list(Model = regress.model,Results = app.results, Data = test.data))
   }
   
   app.results$Mean <- cla.mean
   classif.model$Approach <- 'Classification'
-  return(list(Model = classif.model,Results = app.results))
+  return(list(Model = classif.model,Results = app.results, Data = test.data))
 }
 
 reg.approach.cof <- function(test.data, regress.model){
   data.trans.reg <- asig.trans(test.data)
   
   reg.pred <- predict(regress.model, data.trans.reg[,-1])
-  reg.Grade3 <- factor(+(data.trans.reg$Grade3 < 30))
-  reg.Grade3.pred <- factor(+(reg.pred < 30))
-  levels(reg.Grade3) <- c("1" = "failed", "0" = "approved")
-  levels(reg.Grade3.pred) <- c("1" = "failed", "0" = "approved")
   
-  return(confusionMatrix(reg.Grade3.pred, reg.Grade3))
+  reg.final <- factor(+(test.data$Nota.Final < 30))
+  reg.final.pred <- factor(+(rowMeans(as.data.frame(reg.pred,data.trans.reg$Grade1,data.trans.reg$Grade2)) < 30))
+  levels(reg.final) <- c("1" = "failed", "0" = "approved")
+  levels(reg.final.pred) <- c("1" = "failed", "0" = "approved")
+  
+  return(list(cm = confusionMatrix(reg.final.pred, reg.final), preds = reg.pred))
 }
 
 cla.approach.cof <- function(test.data, classif.model){
@@ -59,10 +82,54 @@ cla.approach.cof <- function(test.data, classif.model){
   return(confusionMatrix(predict(classif.model, data.trans.cla), data.trans.cla$Grade3))
 }
 
+abs.best.approach <- function(data,abs.model.year.reg,abs.model.year.cla,asig,year.test,year.pred){
+  abs.model <- NULL
+  best.results <- NULL
+  data.filtered <- asig.adq(data,asig,year.test,year.test)
+  data.filtered <- asig.adq.isis(data.filtered) # JUST ISIS STUDENTS
+  if (!is.null(abs.model.year.reg) & !is.null(abs.model.year.cla) & (nrow(data.filtered) != 0)) {
+    results.abs.model <- model.approach.selection(data.filtered,abs.model.year.reg, abs.model.year.cla$model,asig,year.pred)
+    abs.model <- results.abs.model$Model
+    best.results <- results.abs.model$Results
+    data.filtered <- results.abs.model$Data
+  }else if (!is.null(abs.model.year.reg) & (nrow(data.filtered) != 0)) {
+    abs.model <- abs.model.year.reg
+    abs.model$Approach <- 'Regression'
+    reg.analyz <- reg.approach.cof(data.filtered,abs.model)
+    data.filtered$nota3.Pred <- reg.analyz$preds
+    reg.conf <- reg.analyz$cm
+    reg.spec <- 'None'
+    reg.mean <- mean(reg.conf$byClass["F1"],reg.conf$overall['Accuracy'])
+    if (!is.na(reg.conf$byClass['Specificity'])) {
+      reg.spec <- reg.conf$byClass['Specificity']
+      reg.mean <- mean(reg.conf$byClass['Specificity'],reg.mean)}
+    best.results <- data.frame(Asig = asig, YearPred = year.pred, L.Approach = 'Regression',
+                               F1 = reg.conf$byClass["F1"], Acc = reg.conf$overall['Accuracy'],
+                               Spec = reg.spec, Mean = reg.mean,
+                               stringsAsFactors = FALSE)
+  }else if (!is.null(abs.model.year.cla) & (nrow(data.filtered) != 0)) {
+    abs.model <- abs.model.year.cla$model
+    abs.model$Approach <- 'Classification'
+    cla.conf <- cla.approach.cof(data.filtered,abs.model)
+    cla.spec <- 'None'
+    cla.mean <- mean(cla.conf$byClass["F1"],cla.conf$overall['Accuracy'])
+    if (!is.na(cla.conf$byClass['Specificity'])) {
+      cla.spec <- cla.conf$byClass['Specificity']
+      cla.mean <- mean(cla.conf$byClass['Specificity'],cla.mean)}
+    best.results <- data.frame(Asig = asig, YearPred = year.pred, L.Approach = 'Regression',
+                               F1 = cla.conf$byClass["F1"], Acc = cla.conf$overall['Accuracy'],
+                               Spec = cla.spec, Mean = cla.mean,
+                               stringsAsFactors = FALSE)
+  }
+  return(list(bestmodel = abs.model, results = best.results, data = data.filtered))
+}
+
 abs.models.selection <- function(data, regress.models, classif.models, asignatures, years.pred){
   best.models <- list()
   list.asig <- 1
   all.app.results <- data.frame(Asig = c(), YearPred = c(), L.Approach = c(), F1 = c(), Acc = c(), Spec = c(), Mean = c())
+  val.results <- all.app.results
+  val.data <- data.frame()
   for (asig in asignatures) {
     dir <- paste(PLOTS_DIR_ABS,gsub("\\s", "", asig),"/",sep = "")
     dir.create(dir)
@@ -87,42 +154,16 @@ abs.models.selection <- function(data, regress.models, classif.models, asignatur
       if ( length(grep(year, names(abs.models.asig.cla))) > 0 ) { # REGRESSION MODEL BY YEAR - GET
         abs.model.year.cla <- abs.models.asig.cla[[names(abs.models.asig.cla)[grep(year, names(abs.models.asig.cla))]]]
       }
-      abs.model <- NULL
-      if (!is.null(abs.model.year.reg) & !is.null(abs.model.year.cla)) {
-        data.filtered <- asig.adq(data,asig,year-1,year-1)
-        results.abs.model <- model.approach.selection(data.filtered,abs.model.year.reg, abs.model.year.cla$model,asig,year)
-        abs.model <- results.abs.model$Model
-        app.results <- rbind(app.results,results.abs.model$Results)
-        print(paste('1: ASIG:',asig,'YEAR:',year,'Approach:',abs.model$Approach))
-      }else if (!is.null(abs.model.year.reg)) {
-        abs.model <- abs.model.year.reg
-        abs.model$Approach <- 'Regression'
-        reg.conf <- reg.approach.cof(asig.adq(data,asig,year-1,year-1),abs.model)
-        reg.spec <- 'None'
-        reg.mean <- mean(reg.conf$byClass["F1"],reg.conf$overall['Accuracy'])
-        if (!is.na(reg.conf$byClass['Specificity'])) {
-          reg.spec <- reg.conf$byClass['Specificity']
-          reg.mean <- mean(reg.conf$byClass['Specificity'],reg.mean)}
-        app.results <- rbind(app.results,data.frame(Asig = asig, YearPred = year, L.Approach = 'Regression',
-                                                    F1 = reg.conf$byClass["F1"], Acc = reg.conf$overall['Accuracy'],
-                                                    Spec = reg.spec, Mean = reg.mean,
-                                                    stringsAsFactors = FALSE))
-        print(paste('2: ASIG:',asig,'YEAR:',year,'Approach:',abs.model$Approach))
-      }else if (!is.null(abs.model.year.cla)) {
-        abs.model <- abs.model.year.cla$model
-        abs.model$Approach <- 'Classification'
-        cla.conf <- cla.approach.cof(asig.adq(data,asig,year-1,year-1),abs.model)
-        cla.spec <- 'None'
-        cla.mean <- mean(cla.conf$byClass["F1"],cla.conf$overall['Accuracy'])
-        if (!is.na(cla.conf$byClass['Specificity'])) {
-          cla.spec <- cla.conf$byClass['Specificity']
-          cla.mean <- mean(cla.conf$byClass['Specificity'],cla.mean)}
-        app.results <- rbind(app.results,data.frame(Asig = asig, YearPred = year, L.Approach = 'Regression',
-                                                    F1 = cla.conf$byClass["F1"], Acc = cla.conf$overall['Accuracy'],
-                                                    Spec = cla.spec, Mean = cla.mean,
-                                                    stringsAsFactors = FALSE))
-        print(paste('3: ASIG:',asig,'YEAR:',year,'Approach:',abs.model$Approach))
-      }
+      
+      best.approach <- abs.best.approach(data,abs.model.year.reg,abs.model.year.cla,asig,year-1,year) # TEST
+      abs.model <- best.approach$bestmodel
+      app.results <- rbind(app.results,best.approach$results)
+      
+      best.approach.val <- abs.best.approach(data,abs.model.year.reg,abs.model.year.cla,asig,year,year) # VALIDATION
+      val.results <- rbind(val.results,best.approach.val$results)
+      
+      if ('Nota.Final.Pred' %in% names(best.approach$data)) { val.data <- rbind(val.data,best.approach$data,best.approach.val$data) }
+      
       if (is.null(abs.model)) {next()}
       best.models[[list.asig]][[list.year.pred]] <- abs.model
       names(best.models[[list.asig]])[list.year.pred] <- year
@@ -138,6 +179,14 @@ abs.models.selection <- function(data, regress.models, classif.models, asignatur
   }
   # PLOT ALL ABS SELECTION
   plot.abs.selection(all.app.results,PLOTS_DIR_ABS)
+  # PLOT VALIDATION
+  dir.create(paste(PLOTS_DIR_ABS,'Validation/',sep = ''))
+  tot.val.results <- rbind(val.results,all.app.results)
+  plot.abs.selection(tot.val.results[order(tot.val.results$Asig, tot.val.results$YearPred),],paste(PLOTS_DIR_ABS,'Validation/',sep = ''))
+  plot.abs.validation(val.results[,c(1:3)],all.app.results[,c(1:3)],paste(PLOTS_DIR_ABS,'Validation/',sep = ''))
+  
+  # VARIANCE ON FP/FN
+  analy.falses(val.data)
   
   # SAVE MODELS
   for (asig.name in names(best.models)) {
@@ -147,7 +196,7 @@ abs.models.selection <- function(data, regress.models, classif.models, asignatur
     }
   }
   
-  return(best.models)
+  return(val.data)
 }
 
 save.model.abs <- function(model,model.name){
@@ -158,6 +207,26 @@ save.model.abs <- function(model,model.name){
 # =======================================================================================================
 # ============================================ PLOTS ====================================================
 # =======================================================================================================
+
+plot.abs.validation <- function(results.val, results.abs, dir){
+  validation <- data.frame()
+  true.best <- dplyr::intersect(results.abs,results.val)[,c(1:2)]
+  false.best <- dplyr::setdiff(results.val,results.abs)[,c(1:2)]
+  unpredicted <- dplyr::setdiff(dplyr::setdiff(results.abs,results.val)[,c(1:2)],false.best)
+  
+  true.best$state <- factor(rep('TRUE BEST',nrow(true.best)))
+  false.best$state <- factor(rep('FALSE BEST',nrow(false.best)))
+  unpredicted$state <- factor(rep('UNPREDICTED',nrow(unpredicted)))
+  
+  validation <- rbind(unpredicted,true.best,false.best)
+  validation$App <- rep(1,nrow(validation))
+  
+  p.props <- plot_ly(validation, labels = ~state, values = ~App, type = 'pie') %>%
+    layout(title = 'VALIDACIÓN DE MEJOR MODELO',
+           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  export(p.props, paste(dir,"Approach_Vals.pdf",sep = ""))
+}
 
 plot.abs.selection <- function(abs.results,dir){
   p <- plot_ly(
@@ -188,8 +257,9 @@ plot.abs.selection <- function(abs.results,dir){
       align = c('left', 'center'),
       font = list(color = c('#506784'), size = 12)
     ))
-  print(paste(dir,"ABS_Selection.pdf",sep = ""))
-  export(p, paste(dir,"ABS_Selection.pdf",sep = ""))
+  print(paste(dir,"ABS_Selection.html",sep = ""))
+  htmlwidgets::saveWidget(p, file.path(normalizePath(dirname(paste(dir,"ABS_Selection.html",sep = ""))),
+                                       basename(paste(dir,"ABS_Selection.html",sep = ""))))
   
   abs.results$App <- rep(1,nrow(abs.results))
   p.props <- plot_ly(abs.results, labels = ~L.Approach, values = ~App, type = 'pie') %>%

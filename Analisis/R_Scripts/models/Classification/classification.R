@@ -169,8 +169,8 @@ getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
     list.model <- list.model + 1
   }
   
-  if ( length(allmodels) != 0 ) classif_utils.plotMetricsOfModelsTablePDF(allmodels, paste(asig, sep = "" ), name = "/allModelsLambdas.pdf");
-  if ( length(models) != 0 ) classif_utils.plotMetricsOfModelsTablePDF(models, paste(asig, sep = "" ), name = "LambdaSelection.pdf")
+  if ( length(allmodels) != 0 ) classif_utils.plotMetricsOfModelsTablePDF(allmodels, paste(asig, sep = "" ), name = "allModelsLambdas.html");
+  if ( length(models) != 0 ) classif_utils.plotMetricsOfModelsTablePDF(models, paste(asig, sep = "" ), name = "LambdaSelection.html")
   
   return( models )
 }

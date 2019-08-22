@@ -14,6 +14,8 @@ regress.data.adq <- function(data, asig){
   data.asig <- data.asig[ data.asig$Periodo.Academico != "2013-i", ] # WEIRD DATA
   data.asig <- data.asig[ data.asig$Nota.Final <= 50 & data.asig$Estado.Asignatura != "Retiro", ] # NO ACCOMP
   
+  data.asig <- data[ data.grades$Programa.Estudiante %in% c('INGENIERIA DE SISTEMAS'), ] # ISIS STUDENTS
+  
   data.asig <- droplevels(data.asig) # CLEAN UNUSED FACTORS
   
   return(data.asig)
@@ -176,7 +178,7 @@ regress.plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,files_pa
       font = list(color = c('#506784'), size = 12)
     ))
   
-  export(p.conf, files_path[3])
+  htmlwidgets::saveWidget(p.conf, file.path(normalizePath(dirname(files_path[3])),basename(files_path[3])))
   
   d.unanalyzed <- data.frame(
     labels = c("Inscripciones","Cancelo","Perdio","Paso",
@@ -253,7 +255,7 @@ regress.bestModel.benefit.general <- function(allData, asignatures){
   # PLOTS
   files <- c(paste(PLOTS_DIR_REG,"total_benefit.html",sep = ""),
              paste(PLOTS_DIR_REG,"total_benefit_unanalyzed.html",sep = ""),
-               paste(PLOTS_DIR_REG,"conf_results.pdf",sep = ""))
+               paste(PLOTS_DIR_REG,"conf_results.html",sep = ""))
   regress.plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asignatures,"Regresion")
 }
 
@@ -297,7 +299,7 @@ regress.bestModel.benefit.asig <- function(allData, asignatures){
     }
     files <- c(paste(dir,asig.f,"_benefit.html",sep = ""),
                paste(dir,asig.f,"_benefit_unanalyzed.html",sep = ""),
-               paste(dir,asig.f,"_conf_results.pdf",sep = ""))
+               paste(dir,asig.f,"_conf_results.html",sep = ""))
     regress.plot.sunburst.tool(results.cancel,results.loose,results.pass,files,asig,"Regresion")
   }
 }

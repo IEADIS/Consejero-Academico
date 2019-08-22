@@ -25,6 +25,12 @@ asig.adq <- function(data, asig, time.start, time.end){
   return(data.asig)
 }
 
+asig.adq.test <- function(data){
+  data.asig <- data[ data.grades$Programa.Estudiante %in% c('INGENIERIA DE SISTEMAS'), ] # ISIS STUDENTS
+  data.asig <- droplevels(data.asig)
+  return(data.asig)
+}
+
 asig.trans <- function(data){
   data.trans <- data.frame( Asig = data$Codigo.Asignatura, Grade1 = data$nota1, Grade2 = data$nota2, 
                       Grade3 = data$nota3 ) # VARIABLES SELECTION
@@ -275,8 +281,10 @@ plot.lambdas <- function(lambdas.results,dir,selected.lambda){
       align = c('left', 'center'),
       font = list(color = c('#506784'), size = 12)
     ))
-  print(paste(dir,"Lambda_Selection.pdf",sep = ""))
-  export(p, paste(dir,"Lambda_Selection.pdf",sep = ""))
+  print(paste(dir,"Lambda_Selection.html",sep = ""))
+  
+  htmlwidgets::saveWidget(p, file.path(normalizePath(dirname(paste(dir,"Lambda_Selection.html",sep = ""))),
+                                       basename(paste(dir,"Lambda_Selection.html",sep = ""))))
 }
 
 plot.occ.lambdas <- function(lambdas.results,dir){
@@ -311,6 +319,9 @@ deploy.lm <- function(asig,time.start,time.end){
   }
   data.part <- asig.part(data.asig,time.end)
   data.trans.train <- asig.trans(data.part$train)
+  
+  # TEST WITH JUST ISIS STUDENTS
+  data.part$test <- asig.adq.test(data.part$test)
   data.trans.test <- asig.trans(data.part$test)
   
   # TRAINING
