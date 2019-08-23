@@ -49,7 +49,8 @@ classif_utils.data.adq <- function(data, asig, removeCancel = TRUE){
 # TRANSFORMATION OF THE DATA TO A FORMAT ACCEPTED BY THE MODELS TO TRAIN
 classif_utils.asig.trans <- function(data){
   data.trans <- data.frame( Asig = data$Codigo.Asignatura, Grade1 = data$nota1, Grade2 = data$nota2, 
-                            Grade3 = factor(+(data$Nota.Final < 30)), Periodo = data$Periodo.Academico ) # VARIABLES SELECTION
+                            Grade3 = factor(+(data$Nota.Final < 30)), Periodo = data$Periodo.Academico, 
+                            Programa.Estudiante = data$Programa.Estudiante ) # VARIABLES SELECTION
   levels(data.trans$Grade3) <- c("approved","failed")
   return(data.trans)
 }

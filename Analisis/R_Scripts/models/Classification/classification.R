@@ -8,8 +8,8 @@ source("Analisis/R_Scripts/models/Classification/neural_network.R")
 
 # Only in Linux/Unix Systems - in Windows doesn't work - You should use parallel instead - This library is to parallelize, you can comment it
 # Take care of the number of cores
-# library(doMC)
-# registerDoMC(cores = 5)
+library(doMC)
+registerDoMC(cores = 3)
 
 # =======================================================================================================
 # ================================= DEPLOY CLASSIFICATION MODELS ========================================
@@ -61,9 +61,9 @@ evaluate.models <- function( models, data.test ){
   for ( i in 1:length(models) ){
     test.model <<- models[[i]]$model
     test.data.test <<- data.test
-    cm <- confusionMatrix( predict( models[[i]][[1]], data.test ), data.test$Grade3 )
-    models[[i]][[2]]["F1"] <- cm$byClass["F1"]
-    models[[i]][[2]]["Acc"] <- cm$overall["Accuracy"]
+    cm <- confusionMatrix( predict( models[[i]]$model, data.test ), data.test$Grade3 )
+    models[[i]]$data["F1"] <- cm$byClass["F1"]
+    models[[i]]$data["Acc"] <- cm$overall["Accuracy"]
   }
   return(models)
 }
@@ -143,8 +143,10 @@ getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
       
       write( paste( "TIME LAPSE: ", toString(current.time.init), toString(current.time.final), "ASIG: ", asig ), stdout() )
       asig.model <- deploy.by.window(allData, asig, current.time.init, current.time.final, filterPart = function( data.trans ){
+        test.data.trans <<- data.trans
         data.train <- data.trans[ !grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
-        data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ), ] # TEST DATA
+        data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ) 
+                                 & data.trans$Programa.Estudiante %in% "INGENIERIA DE SISTEMAS", ] # TEST DATA
         return(list(train = na.omit(data.train), test = na.omit(data.test)))
       })
       current.time.init <- current.time.init - 1
@@ -195,8 +197,9 @@ classif.bestModel.train <- function(allData, asignatures, omitted.years = c()){
   
   models <- list()
   list.model <- 1
-  
+  write("# INIT TRAIN", stdout())
   for ( asig in asignatures ){
+     write(asig, stdout())
      model.asig <- getBestDeltaTimeByAsig(allData, init.time, final.time, asig)
      
      classif_utils.createClassDir( paste( getClassificationModelsDir(), getClassificationModelsDeltaDir(), "/", asig, sep = "" ) )
