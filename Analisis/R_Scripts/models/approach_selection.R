@@ -14,9 +14,10 @@ analy.falses <- function(data){
   data.falses <- droplevels(data.falses)
   
   print(paste('FALSE*S MEAN OF VARIANCE AROUND 30: ', mean(data.falses$nota.pred.var)))
-  p <- plot_ly(y = data.falses$nota.pred.var, 
-               color = data.falses$Codigo.Asignatura, type = "box",
-               colors = colorRampPalette(c("red","blue",'green'))(nrow(unique(data.falses$Codigo.Asignatura))))
+  # p <- plot_ly(y = data.falses$nota.pred.var, 
+  #              color = data.falses$Codigo.Asignatura, type = "box",
+  #              colors = colorRampPalette(c("red","blue",'green'))(nrow(unique(data.falses$Codigo.Asignatura))))
+  p <- plot_ly(y = data.falses$nota.pred.var, type = "box")
   
   htmlwidgets::saveWidget(p, file.path(normalizePath(dirname(paste(PLOTS_DIR_ABS,"Var_Falses.html",sep = ""))),
                                        basename(paste(PLOTS_DIR_ABS,"Var_Falses.html",sep = ""))))
