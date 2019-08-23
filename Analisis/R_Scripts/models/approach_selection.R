@@ -86,7 +86,7 @@ abs.best.approach <- function(data,abs.model.year.reg,abs.model.year.cla,asig,ye
   abs.model <- NULL
   best.results <- NULL
   data.filtered <- asig.adq(data,asig,year.test,year.test)
-  data.filtered <- asig.adq.isis(data.filtered) # JUST ISIS STUDENTS
+  data.filtered <- asig.adq.test(data.filtered) # JUST ISIS STUDENTS
   if (!is.null(abs.model.year.reg) & !is.null(abs.model.year.cla) & (nrow(data.filtered) != 0)) {
     results.abs.model <- model.approach.selection(data.filtered,abs.model.year.reg, abs.model.year.cla$model,asig,year.pred)
     abs.model <- results.abs.model$Model
@@ -222,7 +222,7 @@ plot.abs.validation <- function(results.val, results.abs, dir){
   validation$App <- rep(1,nrow(validation))
   
   p.props <- plot_ly(validation, labels = ~state, values = ~App, type = 'pie') %>%
-    layout(title = 'VALIDACIÓN DE MEJOR MODELO',
+    layout(title = 'VALIDACI?N DE MEJOR MODELO',
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
   export(p.props, paste(dir,"Approach_Vals.pdf",sep = ""))

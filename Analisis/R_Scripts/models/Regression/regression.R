@@ -28,7 +28,7 @@ asig.adq <- function(data, asig, time.start, time.end){
 asig.adq.test <- function(data){
   data.asig <- data[ data.grades$Programa.Estudiante %in% c('INGENIERIA DE SISTEMAS'), ] # ISIS STUDENTS
   data.asig <- droplevels(data.asig)
-  return(data.asig)
+  return(na.omit(data.asig))
 }
 
 asig.trans <- function(data){
@@ -64,6 +64,7 @@ lm.train <- function(data.train){
 
 lm.test <- function(lm.model,data.test){
   pred.test <- predict( lm.model, data.test )
+  test.pred <<- pred.test; test.data <<- data.test
   err <- sqrt( mean((pred.test - data.test$Grade3)^2) )
   lin.cor <- cor(pred.test,data.test$Grade3)
   return(list(pred = pred.test, RMSE = err, Rsquared = lin.cor))

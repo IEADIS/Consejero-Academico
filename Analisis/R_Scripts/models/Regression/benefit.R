@@ -18,7 +18,7 @@ regress.data.adq <- function(data, asig){
   
   data.asig <- droplevels(data.asig) # CLEAN UNUSED FACTORS
   
-  return(data.asig)
+  return(na.omit(data.asig))
 }
 
 # =======================================================================================================
