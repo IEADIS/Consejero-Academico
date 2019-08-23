@@ -15,7 +15,7 @@ train.svm <- function(data){
   mod_fit <- tryCatch( {
     ctrl <- trainControl(method = "repeatedcv", classProbs=TRUE, number = 5, savePredictions = TRUE, allowParallel = TRUE)
     mod_fit <- train( Grade3 ~ Grade1 + Grade2,  data=data, method="svmLinear", family="binomial", 
-                      trControl = ctrl, tuneGrid = grid, verbose = TRUE)
+                      trControl = ctrl, tuneGrid = grid, verbose = TRUE, preProcess = c("scale", "center"))
     return(mod_fit)
   }, error = {
     mod_fit <- train( Grade3 ~ Grade1 + Grade2,  data=data, method="svmLinear", family="binomial", 

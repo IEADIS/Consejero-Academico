@@ -8,8 +8,8 @@ source("Analisis/R_Scripts/models/Classification/neural_network.R")
 
 # Only in Linux/Unix Systems - in Windows doesn't work - You should use parallel instead - This library is to parallelize, you can comment it
 # Take care of the number of cores
-# library(doMC)
-# registerDoMC(cores = 5)
+library(doMC)
+registerDoMC(cores = 3)
 
 # =======================================================================================================
 # ================================= DEPLOY CLASSIFICATION MODELS ========================================
