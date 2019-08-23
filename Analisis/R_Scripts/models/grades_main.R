@@ -8,7 +8,8 @@ source("Analisis/R_Scripts/models/approach_benefit.R")
 # =====================================================================================================================
 
 data.grades <- read.csv(NOTES, header = TRUE)
-asigntatures.consider <- unique(data.grades[data.grades$Programa.Estudiante %in% c('INGENIERIA DE SISTEMAS'),]$Codigo.Asignatura)[1:3]
+asigntatures.consider <- unique(data.grades[data.grades$Programa.Estudiante %in% c('INGENIERIA DE SISTEMAS') ,]$Codigo.Asignatura)
+asigntatures.consider <- asigntatures.consider[!laply( asigntatures.consider, function(val){ return( grepl("\\(", val) || grepl("\\)", val) ) } ) ]
 years.consider <- strtoi(unique(sub("-.*","",droplevels(data.grades[data.grades$Codigo.Asignatura %in% asigntatures.consider,]$Periodo.Academico))))
 years.consider <- c(years.consider[-c(1,2)],max(years.consider)+1)
 
@@ -17,6 +18,7 @@ years.consider <- c(years.consider[-c(1,2)],max(years.consider)+1)
 # =====================================================================================================================
 set.seed(123)
 write("# TRAIN CLASSIFICATION", stdout())
+# asigntatures.consider[151:length(asigntatures.consider)]
 cla.models <- classif.bestModel.train(allData = data.grades,asignatures = asigntatures.consider)
 cla.models <- Filter(length,cla.models) # EMPTY MODELS REMOVED
 write("# TRAIN REGRESSION", stdout())

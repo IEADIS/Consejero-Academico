@@ -200,7 +200,7 @@ classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable"
   } ), strinsAsFactors = F )
   
   classif_utils.createClassDir(dir)
-  
+  write("PLOTING... classif_utils.plotMetricsOfModelsTable", stdout())
   png( paste(dir, ext, sep = ""), height = 30*nrow(data.table.metrics), width = 200*ncol(data.table.metrics))
   df <- lapply(data.table.metrics, unlist)
   df <- as.data.frame(df, stringsAsFactors = FALSE)
@@ -232,6 +232,7 @@ classif_utils.plotLambdas <- function( models, name = "AllLambdasGeneral", ext =
            type = "bar",
            name = "Lambdas General")
   
+  write("PLOTING... classif_utils.plotLambdas", stdout())
   export(p, file = paste(dir, ext, sep = ""))
   htmlwidgets::saveWidget(as_widget(p), 
                           file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
@@ -270,6 +271,8 @@ classif_utils.plotNumberOfModelsByType <- function( models, name = "TrainedAlgor
     layout(title = 'Porcentaje de Algoritmos entrenados',
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  
+  write("PLOTING... classif_utils.plotNumberOfModelsByType", stdout())
   export(p, file = paste(dir, ext, sep = ""))
   htmlwidgets::saveWidget(as_widget(p), 
           file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
@@ -284,6 +287,7 @@ classif_utils.plot.benefit <- function(results,file_path){
     layout(title = 'Uso de la Herramienta por Estudiante',
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  write("PLOTING... classif_utils.plot.benefit", stdout())
   export(p, file_path)
 }
 
@@ -361,6 +365,7 @@ classif_utils.plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,fi
                           type = 'sunburst',branchvalues = 'total') %>%
     layout(title = 'Beneficios de la Herramienta')
   
+  write("PLOTING... classif_utils.plot.sunburst.tool", stdout())
   htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(files_path[1])),basename(files_path[1])))
   htmlwidgets::saveWidget(as_widget(p.unanalyzed), file.path(normalizePath(dirname(files_path[2])),basename(files_path[2])))
 }

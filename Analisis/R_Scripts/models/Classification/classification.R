@@ -59,6 +59,7 @@ model.selection.best <- function( models, getIndex  = FALSE ){
 evaluate.models <- function( models, data.test ){
   
   for ( i in 1:length(models) ){
+    if ( nrow(data.test) == 0 ) {next()}
     test.model <<- models[[i]]$model
     test.data.test <<- data.test
     cm <- confusionMatrix( predict( models[[i]]$model, data.test ), data.test$Grade3 )
