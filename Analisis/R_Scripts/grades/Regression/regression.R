@@ -1,10 +1,4 @@
-library(psych)
-library(caret)
-library(cowplot)
-library(scatterplot3d)
-source("Analisis/R_Scripts/utils.R")
-#devtools::install_github("laresbernardo/lares")
-
+source("Analisis/R_Scripts/grades/Regression/benefit.R")
 
 # =======================================================================================================
 # ====================================== GRADES ADQUIS ==================================================
@@ -58,7 +52,8 @@ lm.train <- function(data.train){
   lm.model <- train(Grade3 ~ .,
                    data = data.train,
                    method  = "lm",
-                   trControl = regressControl)
+                   trControl = regressControl,
+                   verbose = TRUE)
   return(lm.model)
 }
 
@@ -136,8 +131,6 @@ model.selection.lm.app <- function(models, test.results, asignature){ # BY APPEA
   
   # INDEX OF BEST MODEL
   best.model.ind <- names(which.max(table(app.best.model)))
-  print(paste("Index: ",best.model.ind))
-  print(paste("Models Dim: ",length(models[[asignature]])))
   return(models[[asignature]][[best.model.ind]])
 }
 
@@ -149,7 +142,6 @@ plots.lm <- function(lambda.results,models,asig,year.pred,selected.lambda){
   
   asig <- gsub("\\s", "",asig)
   dir <- paste(PLOTS_DIR_REG,asig,"/",year.pred,"/",sep = "")
-  print(dir)
   dir.create(dir)
   
   # LAMBDA TABLE RESULTS
@@ -162,7 +154,6 @@ plots.lm <- function(lambda.results,models,asig,year.pred,selected.lambda){
     # MODELS BOX COMPARE
     pdf(paste(dir,"Models_Metrics.pdf",sep = ""))
     p <- bwplot(resamples(models), main = paste("Box Plot Comparing",asig,"Linear Models",sep = " "))
-    print(p)
     dev.off()
   } else {
     plot.single.lm(models[[1]],asig,dir)
@@ -282,8 +273,6 @@ plot.lambdas <- function(lambdas.results,dir,selected.lambda){
       align = c('left', 'center'),
       font = list(color = c('#506784'), size = 12)
     ))
-  print(paste(dir,"Lambda_Selection.html",sep = ""))
-  
   htmlwidgets::saveWidget(p, file.path(normalizePath(dirname(paste(dir,"Lambda_Selection.html",sep = ""))),
                                        basename(paste(dir,"Lambda_Selection.html",sep = ""))))
 }
@@ -301,7 +290,6 @@ plot.occ.lambdas <- function(lambdas.results,dir){
 # =======================================================================================================
 
 save.model.lm <- function(model,model.name){
-  print(paste(LM_MODELS,"lm-",model.name,".rds",sep = ""))
   save.model(model, file.name.path = paste(LM_MODELS,"lm-",model.name,".rds",sep = ""))
 }
 
@@ -322,7 +310,7 @@ deploy.lm <- function(asig,time.start,time.end){
   data.trans.train <- asig.trans(data.part$train)
   
   # TEST WITH JUST ISIS STUDENTS
-  data.part$test <- asig.adq.test(data.part$test)
+  # data.part$test <- asig.adq.test(data.part$test) #HYPOTHESIS VERIFICATION
   data.trans.test <- asig.trans(data.part$test)
   
   # TRAINING
@@ -401,13 +389,11 @@ regress.bestModel.train <- function(allData, asignatures, omitted.years = c()){
   all.results <- data.frame(Asig = c(), YearPred = c(), Lambda = c(), RMSE = c(), RSquared = c(),
                              RMSE.norm = c(), RSquared.norm = c())
   
-  print(unique(models.comp$Asignature))
   for (asignature in unique(models.comp$Asignature)) {
     best.models[[asignature]] <- list()
     lambdas.ind.asig <- c()
     asig.results <- data.frame(Asig = c(), YearPred = c(), Lambda = c(), RMSE = c(), RSquared = c(),
                                RMSE.norm = c(), RSquared.norm = c())
-    print(paste("Asignature : ",asignature))
     # PRE-PLOTING PARAMS
     asig <- gsub("\\s", "",asignature)
     dir <- paste(PLOTS_DIR_REG,asig,"/",sep = "")
@@ -425,13 +411,11 @@ regress.bestModel.train <- function(allData, asignatures, omitted.years = c()){
         models.metrics$Asig <- asignature
         lambda.results <- rbind(lambda.results, models.metrics)
       }
-      print(lambda.results)
       lambda.results$RMSE.norm <- scales::rescale(-lambda.results$RMSE, to=c(0,1))
       lambda.results$RSquared.norm <- scales::rescale(lambda.results$RSquared, to=c(0,1))
       
       best.lambda.ind <- which.max(rowMeans(lambda.results[,c(6,7)]))
       best.model.lambda <- lambda.results$Lambda[best.lambda.ind]
-      print(paste("Best Lambda for",year.topred,":",best.model.lambda))
       
       lambdas.ind.asig <- c(lambdas.ind.asig, best.lambda.ind+nrow(asig.results))
       asig.results <- rbind(asig.results, lambda.results)

@@ -2,20 +2,6 @@ library(rgl)
 library(magick)
 library(plotly)
 
-NOTES = "Data/notas_clean.csv"
-LM_MODELS = "Data/Models/Regression/"
-CL_MODELS = "Data/Models/Classification/"
-ABS_MODELS = "Data/Models/Absolute/"
-
-PLOTS_DIR = "Analisis/Plots/"
-PLOTS_DIR_REG <- paste(PLOTS_DIR,"Models/Regression/",sep = "")
-PLOTS_DIR_CLA <- paste(PLOTS_DIR,"Models/Classification/",sep = "")
-PLOTS_DIR_ABS <- paste(PLOTS_DIR,"Models/Absolute/",sep = "")
-
-CLASS_MODELS = "Data/Models/Classification/"
-CLASS_MODELS_DELTA = "/Models_Best_Delta"
-
-
 # =======================================================================================================
 # =================================== 3D VISUALIZATION ==================================================
 # =======================================================================================================
@@ -272,42 +258,4 @@ plotProgramsByYear <- function(data,year){
   counts <- table(dataByYear$Programa.Estudiante,dataByYear$Periodo.Academico)
   barplot(counts, main = paste("N?mero de Estudiantes por Programa",year), xlab="Periodo Academico", col = gray.colors(9),beside=TRUE)
   legend("topright", legend = rownames(counts), fill = gray.colors(9), ncol = 1, cex = 0.45)
-}
-
-# =======================================================================================================
-# ==================================== UTILS CLASSIFICATION =============================================
-# =======================================================================================================
-
-getClassificationModelsDir <- function(){
-  return("Data/Models/Classification/")
-}
-
-getClassificationModelsDeltaDir <- function(){
-  return("/Models_Best_Delta")
-}
-
-getDataCleanDir <- function(){
-  return("Data/notas_clean.csv")
-}
-
-# =======================================================================================================
-# ======================================= MODELS SAVE/LOAD ==============================================
-# =======================================================================================================
-
-save.model <- function(model,file.name.path){
-  saveRDS(model, file = file.name.path)
-}
-
-load.models <- function(files.path){
-  models.files <- list.files(path = files.path)
-  models <- list()
-  for (file.model in models.files) {
-    model.name <- gsub(".rds","",file.model)
-    models[[model.name]] <- load.model(paste(files.path,file.model,sep = ""))
-  }
-  return(models)
-}
-
-load.model <- function(file.model){
-  return(readRDS(file.model))
 }

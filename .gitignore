@@ -1,5 +1,7 @@
 # exclude everything from results
 Data/*
+win-tools/*
+
 Analisis/Plots/Models/Classification/*
 Analisis/Plots/Models/Regression/*
 Analisis/Plots/Models/Absolute/*
@@ -10,7 +12,10 @@ Servicio/DataAnalytics/src/main/resources/static/html/absolute/*
 .Rhistory
 
 # exception to the rule
-!Data/.gitkeep
+!Data/Models/Classification/.gitkeep
+!Data/Models/Regression/.gitkeep
+!Data/Models/Absolute/.gitkeep
+
 !Analisis/Plots/Models/Classification/.gitkeep
 !Analisis/Plots/Models/Regression/.gitkeep
 !Analisis/Plots/Models/Absolute/.gitkeep

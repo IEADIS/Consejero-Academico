@@ -1,15 +1,3 @@
-# Utils for Classification Models
-library(caret)
-library(plotly)
-library(plyr)
-library(cowplot)
-library(scatterplot3d)
-library(gridExtra)
-source("Analisis/R_Scripts/utils.R")
-
-PLOTS_SOURCE_CLASS = "Models/Classification/"
-PLOTS_SOURCE_DIR_STATS = "Statistics/"
-
 # =======================================================================================================
 # ========================================= DATA UTILS ==================================================
 # =======================================================================================================
@@ -74,8 +62,7 @@ classif_utils.createClassDir <- function(path){
 }
 
 classif_utils.save.model <- function(model, model.type, model.name){
-  MODELS <- getClassificationModelsDir()
-  print(paste(MODELS, model.type, model.name, ".rds", sep = ""))
+  MODELS <- params$models.dir$classification
   saveRDS(model, file = paste(MODELS, model.type, model.name, ".rds", sep = ""))
 }
 
@@ -145,7 +132,6 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
   df <- as.data.frame(df, stringsAsFactors = FALSE)
   
   row.fill <- c()
-  write("================IN==============", stdout())
   for (row in 1:length(models)) {
     if (is.null(models[[row]]) ) {next()}
     if ( models[[row]]$data$bestIndex != -1 ) {
@@ -154,7 +140,6 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
       row.fill <- c(row.fill,'white')
     }
   }
-  write("================OUT==============", stdout())
   p <- plot_ly(
     type = 'table',
     header = list(
@@ -183,10 +168,8 @@ classif_utils.plotMetricsOfModelsTablePDF <- function(models, asig, name = "Lamb
     ))
   classif_utils.createClassDir( paste(dir, gsub("\\s", "",df$Asignature[1]), "/", sep = "" ) )
   classif_utils.createClassDir( paste(dir, gsub("\\s", "",asig), "/", sep = "" ) )
-  write( paste(dir, gsub("\\s", "",asig), "/" , name,sep = ""), stdout() )
   htmlwidgets::saveWidget(p, file.path(normalizePath(dirname( paste(dir, gsub("\\s", "",asig), "/" , name,sep = "") )),
                                        basename( paste(dir, gsub("\\s", "",asig), "/" , name,sep = "") )))
-  write("================OUT2==============", stdout())
 }
 
 classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable", ext = ".png" ){
@@ -200,7 +183,6 @@ classif_utils.plotMetricsOfModelsTable <- function(models, name = "MetricsTable"
   } ), strinsAsFactors = F )
   
   classif_utils.createClassDir(dir)
-  write("PLOTING... classif_utils.plotMetricsOfModelsTable", stdout())
   png( paste(dir, ext, sep = ""), height = 30*nrow(data.table.metrics), width = 200*ncol(data.table.metrics))
   df <- lapply(data.table.metrics, unlist)
   df <- as.data.frame(df, stringsAsFactors = FALSE)
@@ -232,7 +214,6 @@ classif_utils.plotLambdas <- function( models, name = "AllLambdasGeneral", ext =
            type = "bar",
            name = "Lambdas General")
   
-  write("PLOTING... classif_utils.plotLambdas", stdout())
   export(p, file = paste(dir, ext, sep = ""))
   htmlwidgets::saveWidget(as_widget(p), 
                           file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
@@ -272,7 +253,6 @@ classif_utils.plotNumberOfModelsByType <- function( models, name = "TrainedAlgor
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
   
-  write("PLOTING... classif_utils.plotNumberOfModelsByType", stdout())
   export(p, file = paste(dir, ext, sep = ""))
   htmlwidgets::saveWidget(as_widget(p), 
           file.path(normalizePath(dirname( paste(dir, ".html", sep = "") )),
@@ -287,7 +267,6 @@ classif_utils.plot.benefit <- function(results,file_path){
     layout(title = 'Uso de la Herramienta por Estudiante',
            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-  write("PLOTING... classif_utils.plot.benefit", stdout())
   export(p, file_path)
 }
 
@@ -365,7 +344,6 @@ classif_utils.plot.sunburst.tool <- function(cancel.data,loose.data,pass.data,fi
                           type = 'sunburst',branchvalues = 'total') %>%
     layout(title = 'Beneficios de la Herramienta')
   
-  write("PLOTING... classif_utils.plot.sunburst.tool", stdout())
   htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(files_path[1])),basename(files_path[1])))
   htmlwidgets::saveWidget(as_widget(p.unanalyzed), file.path(normalizePath(dirname(files_path[2])),basename(files_path[2])))
 }

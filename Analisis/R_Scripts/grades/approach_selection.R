@@ -1,7 +1,6 @@
-library(psych)
-library(caret)
-library(cowplot)
-source("Analisis/R_Scripts/utils.R")
+# =====================================================================================================================
+# ========================================== ABS MODEL SELECTION ======================================================
+# =====================================================================================================================
 
 analy.falses <- function(data){
   grade.real <- data$Nota.Final
@@ -13,7 +12,6 @@ analy.falses <- function(data){
   data.falses$nota.pred.var <- diff.falses
   data.falses <- droplevels(data.falses)
   
-  print(paste('FALSE*S MEAN OF VARIANCE AROUND 30: ', mean(data.falses$nota.pred.var)))
   # p <- plot_ly(y = data.falses$nota.pred.var, 
   #              color = data.falses$Codigo.Asignatura, type = "box",
   #              colors = colorRampPalette(c("red","blue",'green'))(nrow(unique(data.falses$Codigo.Asignatura))))
@@ -160,12 +158,14 @@ abs.models.selection <- function(data, regress.models, classif.models, asignatur
       abs.model <- best.approach$bestmodel
       app.results <- rbind(app.results,best.approach$results)
       
+      if (is.null(abs.model)) {next()}
+      
       best.approach.val <- abs.best.approach(data,abs.model.year.reg,abs.model.year.cla,asig,year,year) # VALIDATION
       val.results <- rbind(val.results,best.approach.val$results)
       
-      if ('Nota.Final.Pred' %in% names(best.approach$data)) { val.data <- rbind(val.data,best.approach$data,best.approach.val$data) }
+      if ('nota3.Pred' %in% names(best.approach$data)) { val.data <- rbind(val.data,best.approach$data,best.approach.val$data) }
       
-      if (is.null(abs.model)) {next()}
+      abs.model$Confidence <- best.approach.val$results$Mean #CONFIDENCE METRIC ADDED TO MODEL
       best.models[[list.asig]][[list.year.pred]] <- abs.model
       names(best.models[[list.asig]])[list.year.pred] <- year
       list.year.pred <- list.year.pred + 1
@@ -197,7 +197,7 @@ abs.models.selection <- function(data, regress.models, classif.models, asignatur
     }
   }
   
-  return(val.data)
+  return(best.models)
 }
 
 save.model.abs <- function(model,model.name){
@@ -258,7 +258,6 @@ plot.abs.selection <- function(abs.results,dir){
       align = c('left', 'center'),
       font = list(color = c('#506784'), size = 12)
     ))
-  print(paste(dir,"ABS_Selection.html",sep = ""))
   htmlwidgets::saveWidget(p, file.path(normalizePath(dirname(paste(dir,"ABS_Selection.html",sep = ""))),
                                        basename(paste(dir,"ABS_Selection.html",sep = ""))))
   
