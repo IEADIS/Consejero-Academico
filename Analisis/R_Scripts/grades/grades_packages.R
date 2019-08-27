@@ -22,7 +22,8 @@ necesarry.packages <- c('yaml',
                         'plotly',
                         'scatterplot3d',
                         'devtools',
-                        'cowplot')
+                        'cowplot',
+                        'plyr')
 invisible(sapply(necesarry.packages, load.package))
 
 # SPECIAL LIBRARIES

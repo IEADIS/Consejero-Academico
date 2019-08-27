@@ -143,8 +143,8 @@ getBestDeltaTimeByAsig <- function(allData, init.time, final.time, asig){
         test.data.trans <<- data.trans
         data.train <- data.trans[ !grepl( toString(current.time.final), data.trans$Periodo ), ] # TRAINING DATA
         data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ) , ] # TEST DATA
-        # data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ) 
-        #                          & data.trans$Programa.Estudiante %in% "INGENIERIA DE SISTEMAS", ] # HYPO VERI
+        data.test <- data.trans[ grepl( toString(current.time.final), data.trans$Periodo ) 
+                                & data.trans$Programa.Estudiante %in% "INGENIERIA DE SISTEMAS", ] # HYPO VERI
         return(list(train = na.omit(data.train), test = na.omit(data.test)))
       })
       current.time.init <- current.time.init - 1

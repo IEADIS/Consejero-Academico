@@ -12,6 +12,8 @@ Servicio/DataAnalytics/src/main/resources/static/html/absolute/*
 .Rhistory
 
 # exception to the rule
+!win-tools/.gitkeep
+
 !Data/Models/Classification/.gitkeep
 !Data/Models/Regression/.gitkeep
 !Data/Models/Absolute/.gitkeep
