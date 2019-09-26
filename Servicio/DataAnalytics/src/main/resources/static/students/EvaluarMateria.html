@@ -6,89 +6,90 @@ and open the template in the editor.
 -->
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://xmlns.jcp.org/jsf/html"
-      xmlns:p="http://primefaces.org/ui" 
-      xmlns:f="http://xmlns.jcp.org/jsf/core" >
-    <head>
-        <title>TODO supply a title</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet"
-          href="/webjars/bootstrap/3.3.7/css/bootstrap.min.css" />    
-        <link rel="stylesheet" href="/stylesheets/mycss.css"/>
-        <link rel="stylesheet" href="../stylesheets/styleMaD.css"/>
-        <script src="/webjars/jquery/jquery.min.js"></script>
-        <script src="/webjars/sockjs-client/sockjs.min.js"></script>
-        <script src="/webjars/stomp-websocket/stomp.min.js"></script>
-        <script src="/js/game/evaluarMateria.js"></script>
-    </head>
-    <body onload="evaluarMateria.loadMaterias()">
+>
+<head>
+    <title>TODO supply a title</title>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link href="/webjars/bootstrap/3.3.7/css/bootstrap.min.css"
+          rel="stylesheet"/>
+    <link href="/stylesheets/mycss.css" rel="stylesheet"/>
+    <link href="../stylesheets/styleMaD.css" rel="stylesheet"/>
+    <script src="/webjars/jquery/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="/js/game/evaluarMateria.js"></script>
+</head>
+<body onload="evaluarMateria.loadMaterias()">
 
-    <h:form id="general">
-        <div class="header">
-            <ul class="optionsHeader">
-                <li>
-                    <img src="/images/logo.jpg" alt="Escuela Colombiana de Ingenieria Julio Garavito"/>
-                    <div id="barMenu">
-                        <div class="dropdown">
-                            <button onclick="location.href ='/index.html'" class="menuBarButton">Inicio</button>
-                        </div>
-                        <div class="dropdown">
-                            <button class="menuBarButton">Herramientas</button>
-                            <div class="dropdown-content">
-                                <a href="/students/student.html" target="_self">Entrar a Menú Estudiantes</a>
-                            </div>
-                        </div>
+<h:form id="general">
+    <div class="header">
+        <ul class="optionsHeader">
+            <li>
+                <img alt="Escuela Colombiana de Ingenieria Julio Garavito" src="/images/logo.jpg"/>
+                <div id="barMenu">
+                    <div class="dropdown">
+                        <button class="menuBarButton" onclick="location.href ='/index.html'">Inicio</button>
                     </div>
-                </li>
-            </ul>
-        </div>
-        <div class="content">
-            <h:form id="reporteMaterias" style="text-align: center;">
-                
-                <h1 style="font-size: 45px; text-align: center">Evaluar Materia</h1>
-                
-                <form action="">
-                    <font style="font-size: 20px; text-align: center">MATERIA: </font>
-                    <input list="materias" id="materia" name="materia">
-                    <datalist id="materias">
-                    </datalist>
-                </form>
-            </h:form>
-            <div class ="container">
-                <div class="row">
-                    <div class="" style="text-align: center">
-                        <br>
-                        <form>
-                            <font style="font-size: 20px; text-align: center">NOTA TERCIO 1: </font>
-                            <input type="text" id="tercio1" name="tercio1" value="" onchange="" />
-                        </form>
-                        <br>
-                        <form>
-                            <font style="font-size: 20px; text-align: justify">NOTA TERCIO 2: </font>
-                            <input type="text" id="tercio2" name="tercio2" value="" onchange="" />
-                        </form>
-                        <br>
-                            <button class="btn btn-primary" onclick="evaluarMateria.makeEstimate()" style="font-size: 20px">Generar Resultados</button>
-                    </div>
-                    <div class="" style="text-align: center">
-                        <br>
-                        <br>
-                        <form>
-                            <img src="" id="status"/>
-                            <font id="tercio3" style="font-size: 24px; color: #212444;"></font>
-                        </form>
-                        <br>
-                        <form>
-                            <font id="rSquared" style="font-size: 18px; color: #212444;"></font>
-                        </form>
-                        <br>
-                        <form>
-                            <font id="decision" style="font-size: 22px; color: #7a2327;"></font>
-                        </form>
+                    <div class="dropdown">
+                        <button class="menuBarButton">Herramientas</button>
+                        <div class="dropdown-content">
+                            <a href="/students/student.html" target="_self">Entrar a Menú Estudiantes</a>
+                        </div>
                     </div>
                 </div>
+            </li>
+        </ul>
+    </div>
+    <div class="content">
+        <h:form id="reporteMaterias" style="text-align: center;">
+
+            <h1 style="font-size: 45px; text-align: center">Evaluar Materia</h1>
+
+            <form action="">
+                <font style="font-size: 20px; text-align: center">MATERIA: </font>
+                <input id="materia" list="materias" name="materia">
+                <datalist id="materias">
+                </datalist>
+            </form>
+        </h:form>
+        <div class="container">
+            <div class="row">
+                <div class="" style="text-align: center">
+                    <br>
+                    <form>
+                        <font style="font-size: 20px; text-align: center">NOTA TERCIO 1: </font>
+                        <input id="tercio1" name="tercio1" onchange="" type="text" value=""/>
+                    </form>
+                    <br>
+                    <form>
+                        <font style="font-size: 20px; text-align: justify">NOTA TERCIO 2: </font>
+                        <input id="tercio2" name="tercio2" onchange="" type="text" value=""/>
+                    </form>
+                    <br>
+                    <button class="btn btn-primary" onclick="evaluarMateria.makeEstimate()" style="font-size: 20px">
+                        Generar Resultados
+                    </button>
+                </div>
+                <div class="" style="text-align: center">
+                    <br>
+                    <br>
+                    <form>
+                        <img id="status" src=""/>
+                        <font id="tercio3" style="font-size: 24px; color: #212444;"></font>
+                    </form>
+                    <br>
+                    <form>
+                        <font id="rSquared" style="font-size: 18px; color: #212444;"></font>
+                    </form>
+                    <br>
+                    <form>
+                        <font id="decision" style="font-size: 22px; color: #7a2327;"></font>
+                    </form>
+                </div>
             </div>
-            <br>
         </div>
-    </body>
+        <br>
+    </div>
+</body>
 </html>

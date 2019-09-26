@@ -6,11 +6,8 @@
 package edu.eci.apau.notasprototype.persistence;
 
 import java.util.List;
-/**
- *
- * @author Esteban
- */
-public interface MateriasRepository{
-    
-    public List<String> loadAllMaterias();
+/** @author Esteban */
+public interface MateriasRepository {
+
+  List<String> loadAllMaterias();
 }

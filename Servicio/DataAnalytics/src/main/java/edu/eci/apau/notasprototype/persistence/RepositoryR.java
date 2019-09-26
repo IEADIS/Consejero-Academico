@@ -7,12 +7,9 @@ package edu.eci.apau.notasprototype.persistence;
 
 import edu.eci.apau.notasprototype.model.Materia;
 
-/**
- *
- * @author sistemas
- */
+/** @author sistemas */
 public interface RepositoryR {
-    
-    public Materia classifyStudent( String subj, double note1, double note2 ) throws PersistenceException;
-    
+
+  Materia classifyStudent(String subj, Double note1, Double note2)
+      throws PersistenceException;
 }

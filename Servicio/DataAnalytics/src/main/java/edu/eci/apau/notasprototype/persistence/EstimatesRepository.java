@@ -7,12 +7,8 @@ package edu.eci.apau.notasprototype.persistence;
 
 import edu.eci.apau.notasprototype.model.Estimate;
 
-/**
- *
- * @author Esteban
- */
+/** @author Esteban */
 public interface EstimatesRepository {
-    
-    public Estimate loadEstimate(String materia, double nota1, double nota2);
-    
+
+  Estimate loadEstimate(String materia, double nota1, double nota2);
 }

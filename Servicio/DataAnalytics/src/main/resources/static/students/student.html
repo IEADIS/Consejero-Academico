@@ -5,45 +5,44 @@ To change this template file, choose Tools | Templates
 and open the template in the editor.
 -->
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="http://xmlns.jcp.org/jsf/html"
-      xmlns:p="http://primefaces.org/ui" 
-      xmlns:f="http://xmlns.jcp.org/jsf/core" >
-    <head>
-        <title>TODO supply a title</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="/stylesheets/mycss.css"/>
-        <link rel="stylesheet" href="/stylesheets/styleMaD.css"/>
-    </head>
-    <body>
-        <div class="header">
-            <ul class="optionsHeader">
-                <li>
-                    <img src="/images/logo.jpg" alt="Escuela Colombiana de Ingenieria Julio Garavito"/>
-                    <div id="barMenu">
-                        <div class="dropdown">
-                            <button onclick="location.href ='/index.html'" class="menuBarButton">Inicio</button>
-                        </div>
-                        <div class="dropdown">
-                            <button class="menuBarButton">Herramientas</button>
-                            <div class="dropdown-content">
-                                <a href="EvaluarMateria.html" target="_self">Evaluar Materia</a>
-                            </div>
-                        </div>
+>
+<head>
+    <title>TODO supply a title</title>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link href="/stylesheets/mycss.css" rel="stylesheet"/>
+    <link href="/stylesheets/styleMaD.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="header">
+    <ul class="optionsHeader">
+        <li>
+            <img alt="Escuela Colombiana de Ingenieria Julio Garavito" src="/images/logo.jpg"/>
+            <div id="barMenu">
+                <div class="dropdown">
+                    <button class="menuBarButton" onclick="location.href ='/index.html'">Inicio</button>
+                </div>
+                <div class="dropdown">
+                    <button class="menuBarButton">Herramientas</button>
+                    <div class="dropdown-content">
+                        <a href="EvaluarMateria.html" target="_self">Evaluar Materia</a>
                     </div>
-                </li>
-            </ul>
-        </div>
-        <div id="main-content" class="content">
-            <div class="homeHeader">
-                <h1 style="font-size: 45px; text-align: center">Análisis de Notas</h1>
-                <div class="menu" style="width: 95%">
-                    <button onclick="location.href='EvaluarMateria.html'" style="background-image: url('/images/evaluar_materia.png')"/>
-                    <!--button onclick="location.href='/admin/ReporteMaterias.html'" style="background-image: url('/images/reporte_materias.png')"/-->
-                    <button onclick="return false;" style="background-image: url('/images/reporte_materias.png')"/>
                 </div>
             </div>
+        </li>
+    </ul>
+</div>
+<div class="content" id="main-content">
+    <div class="homeHeader">
+        <h1 style="font-size: 45px; text-align: center">Análisis de Notas</h1>
+        <div class="menu" style="width: 95%">
+            <button onclick="location.href='EvaluarMateria.html'"
+                    style="background-image: url('/images/evaluar_materia.png')"/>
+            <!--button onclick="location.href='/admin/ReporteMaterias.html'" style="background-image: url('/images/reporte_materias.png')"/-->
+            <button onclick="return false;" style="background-image: url('/images/reporte_materias.png')"/>
         </div>
+    </div>
+</div>
 <!--
         <div class="content">
             <ul class="homeHeader">
@@ -63,5 +62,5 @@ and open the template in the editor.
         <br></br>
         <br></br>
 -->
-    </body>
+</body>
 </html>

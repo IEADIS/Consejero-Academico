@@ -5,12 +5,5 @@
  */
 package edu.eci.apau.notasprototype.persistence;
 
-/**
- *
- * @author Zekkenn
- */
-public class ROperations {
-    
-    
-    
-}
+/** @author Zekkenn */
+public class ROperations {}

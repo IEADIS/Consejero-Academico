@@ -5,16 +5,11 @@
  */
 package edu.eci.apau.notasprototype.model;
 
-/**
- *
- * @author sebastian.moreno-r
- */
+/** @author sebastian.moreno-r */
 public class ResponseClassification {
-    
-    private String subject;
-    private int grade1;
-    private int grade2;
-    private boolean classification;
-    
-    
+
+  private String subject;
+  private int grade1;
+  private int grade2;
+  private boolean classification;
 }

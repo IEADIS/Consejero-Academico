@@ -69,5 +69,8 @@
     <orderEntry type="library" name="Maven: org.webjars:stomp-websocket:2.3.3" level="project" />
     <orderEntry type="library" name="Maven: org.webjars:bootstrap:3.3.7" level="project" />
     <orderEntry type="library" name="Maven: org.webjars:jquery:3.1.0" level="project" />
+    <orderEntry type="library" name="Maven: com.github.lucarosellini.rJava:JRIEngine:0.9-7" level="project" />
+    <orderEntry type="library" name="Maven: com.github.lucarosellini.rJava:JRI:0.9-7" level="project" />
+    <orderEntry type="library" name="Maven: com.github.lucarosellini.rJava:REngine:0.9-7" level="project" />
   </component>
 </module>

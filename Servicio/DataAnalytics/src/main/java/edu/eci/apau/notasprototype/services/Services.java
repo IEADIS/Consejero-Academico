@@ -8,18 +8,16 @@ package edu.eci.apau.notasprototype.services;
 import edu.eci.apau.notasprototype.model.Estimate;
 import edu.eci.apau.notasprototype.model.Materia;
 import edu.eci.apau.notasprototype.persistence.PersistenceException;
+
 import java.util.List;
 
-/**
- *
- * @author sistemas
- */
+/** @author sistemas */
 public interface Services {
-    
-    public List<String> getCurrentMaterias() throws PersistenceException;
-    
-    public Estimate getEstimate(Materia materia) throws PersistenceException;
-    
-    public Materia classifyStudent( String subj, double note1, double note2 ) throws PersistenceException;
-    
+
+  List<String> getCurrentMaterias() throws PersistenceException;
+
+  Estimate getEstimate(Materia materia) throws PersistenceException;
+
+  Materia classifyStudent(String subj, double note1, double note2)
+      throws PersistenceException;
 }
