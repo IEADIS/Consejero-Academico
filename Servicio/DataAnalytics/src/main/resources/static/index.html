@@ -10,31 +10,57 @@ and open the template in the editor.
     <title>TODO supply a title</title>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-
-    <script src="/webjars/jquery/jquery.min.js"></script>
-    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
-    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
-    <link href="stylesheets/mycss.css" rel="stylesheet"/>
+    <link href="/stylesheets/mycss.css" rel="stylesheet"/>
+    <link href="/stylesheets/styleMaD.css" rel="stylesheet"/>
 </head>
 <body>
-<div class="content">
-    <ul class="homeHeader">
+<div class="header">
+    <ul class="optionsHeader">
         <li>
-            <img alt="Escuela Colombiana de Ingenieria Julio Garavito" src="/images/logo_esquina.jpg"/>
-            <h1 style="font-size: 45px; text-align: center">Gestión de Estadísticos</h1>
+            <img alt="Escuela Colombiana de Ingenieria Julio Garavito" src="/images/logo.jpg"/>
+            <div id="barMenu">
+                <div class="dropdown">
+                    <button class="menuBarButton" onclick="location.href ='/index.html'">Inicio</button>
+                </div>
+                <div class="dropdown">
+                    <button class="menuBarButton">Herramientas</button>
+                    <div class="dropdown-content">
+                        <a href="students/EvaluarMateria.html" target="_self">Evaluar Materia</a>
+                    </div>
+                </div>
+            </div>
         </li>
     </ul>
-    <div class="menu" style="width: 95%">
-        <button onclick="location.href='/admin/admin.html'"
-                style="margin: 0px; background-color: transparent; border: none;">
-            <img src="/images/admin-icon.png"/></button>
-        <button onclick="location.href='/students/student.html'"
-                style="margin: 0px; background-color: transparent; border: none; ">
-            <img src="/images/user-icon.png" width="45%"/></button>
-    </div>
-
 </div>
-<br></br>
-<br></br>
+<div class="content" id="main-content">
+    <div class="homeHeader">
+        <h1 style="font-size: 45px; text-align: center">Análisis de Notas</h1>
+        <div class="menu" style="width: 95%">
+            <button onclick="location.href='students/EvaluarMateria.html'"
+                    style="background-image: url('/images/evaluar_materia.png')"/>
+            <!--button onclick="location.href='/admin/ReporteMaterias.html'" style="background-image: url('/images/reporte_materias.png')"/-->
+            <button onclick="return false;" style="background-image: url('/images/reporte_materias.png')"/>
+        </div>
+    </div>
+</div>
+<!--
+        <div class="content">
+            <ul class="homeHeader">
+                <li>
+                    <img src="/images/logo_esquina.jpg" alt="Escuela Colombiana de Ingenieria Julio Garavito"/>
+                    <h1 style="margin-bottom: 30px; font-size: 60px;">Notas Prototipo</h1>
+                </li>
+            </ul>
+            <div class="menu" style="width: 95%">
+                <button onclick="location.href='EvaluarMateria.html'" style="background-image: url('/images/evaluar_materia.png')"/>
+            </div>
+            <div class="menu" style="width: 95%;">
+                <button onclick="location.href='/admin/ReporteMaterias.html'" style="background-image: url('/images/reporte_materias.png')"/>
+            </div>
+            
+        </div>
+        <br></br>
+        <br></br>
+-->
 </body>
 </html>

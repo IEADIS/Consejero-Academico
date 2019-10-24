@@ -32,8 +32,6 @@ public class MateriasRepositoryStub implements MateriasRepository {
 
     Set<String> nameModels = new TreeSet<>();
     final File dir = new File(path);
-    System.out.println(path);
-    System.out.println(dir.listFiles());
     for (File f : dir.listFiles()) {
       if (!f.isDirectory() && f.isFile()) {
         String temp = f.getName().replace("abs-", "").replace(".rds", "");

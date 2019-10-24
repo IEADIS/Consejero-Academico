@@ -72,5 +72,6 @@
     <orderEntry type="library" name="Maven: com.github.lucarosellini.rJava:JRIEngine:0.9-7" level="project" />
     <orderEntry type="library" name="Maven: com.github.lucarosellini.rJava:JRI:0.9-7" level="project" />
     <orderEntry type="library" name="Maven: com.github.lucarosellini.rJava:REngine:0.9-7" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.18.10" level="project" />
   </component>
 </module>

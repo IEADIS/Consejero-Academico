@@ -14,7 +14,13 @@ import edu.eci.apau.notasprototype.persistence.RepositoryR;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /** @author Esteban */
 @Service
@@ -38,6 +44,21 @@ public class MateriaServices implements Services {
   @Override
   public Materia classifyStudent(String subj, double note1, double note2)
       throws PersistenceException {
-    return rRepository.classifyStudent(subj, note1, note2);
+    Materia response = rRepository.classifyStudent(subj, note1, note2);
+    createFileLog(response);
+    return response;
+  }
+
+  public void createFileLog(Materia materia) {
+    materia.setLocalDateTime(LocalDateTime.now());
+    try {
+      Writer output = null;
+      File file = new File("LOGS/" + UUID.randomUUID() + ".txt");
+      output = new BufferedWriter(new FileWriter(file));
+      output.write(materia.toString());
+      output.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 }

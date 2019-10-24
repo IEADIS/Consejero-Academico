@@ -12,7 +12,10 @@ import org.rosuda.JRI.Rengine;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /** @author Zekkenn */
 @Service
@@ -49,17 +52,7 @@ public class RepositoryRImpl implements RepositoryR {
         nameModels.add(f);
       }
     }
-    Collections.sort(
-        nameModels,
-        new Comparator<File>() {
-          @Override
-          public int compare(File s1, File s2) {
-            return s1.getName().compareToIgnoreCase(s2.getName());
-          }
-        });
-    /*for ( File f : nameModels ){
-        System.out.println(f.getAbsolutePath());
-    }*/
+    Collections.sort(nameModels, (s1, s2) -> s1.getName().compareToIgnoreCase(s2.getName()));
     return nameModels;
   }
 
@@ -77,12 +70,16 @@ public class RepositoryRImpl implements RepositoryR {
     engine.eval(String.format(PREDICTMODEL, note1.intValue(), note2.intValue()));
 
     double res = engine.eval("pred").asDouble();
-    // System.out.println( res );
-    // System.out.println(String.format( READMODEL , pathModel));
-    // System.out.println( String.format( PREDICTMODEL , note1, note2) );
     boolean pass = (res == 1) || (res != 2) && res >= 30;
 
-    Materia response = new Materia(subj, note1, note2, pass, year);
+    Materia response =
+        Materia.builder()
+            .nombre(subj)
+            .nota1(note1)
+            .nota2(note2)
+            .classification(pass)
+            .lastYearTrained(year)
+            .build();
     return response;
   }
 }

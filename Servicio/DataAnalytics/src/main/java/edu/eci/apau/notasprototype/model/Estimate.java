@@ -5,7 +5,10 @@
  */
 package edu.eci.apau.notasprototype.model;
 
+import lombok.Data;
+
 /** @author Esteban */
+@Data
 public class Estimate {
 
   private final double nota1coef;
@@ -25,29 +28,5 @@ public class Estimate {
   public void makeEstimate(double nota1, double nota2) {
     this.nota3 = (nota1 * nota1coef) + (nota2 * nota2coef) + intercept;
     this.decision = (((nota3 + nota2 + nota1) / 3D) < 30) ? "Cancele" : "NoCancele";
-  }
-
-  public double getrSquared() {
-    return rSquared;
-  }
-
-  public void setrSquared(double rSquared) {
-    this.rSquared = rSquared;
-  }
-
-  public String getDecision() {
-    return decision;
-  }
-
-  public void setDecision(String decision) {
-    this.decision = decision;
-  }
-
-  public double getNota3() {
-    return nota3;
-  }
-
-  public void setNota3(double nota3) {
-    this.nota3 = nota3;
   }
 }
